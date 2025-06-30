@@ -17,6 +17,24 @@ const PORT = process.env.PORT || 3000;
 // Built-in middleware to parse JSON bodies
 app.use(express.json());
 
+// Configure CORS to only allow requests from localhost:5173 or a specific dev frontend link
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:5173', // Default to localhost if not set
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 // Basic route
 app.get('/', (req, res, next) => {
   res.send('Welcome to the Hotel API!');
