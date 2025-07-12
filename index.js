@@ -51,6 +51,13 @@ app.get('/hotels', (req, res, next) => {
   ]);
 });
 
+// Hotel Page Route
+app.get('/:id', (req, res, next) => {
+  const hotelId = req.params.id;
+  // Placeholder for fetching hotel details by ID
+  res.json({ id: hotelId, name: 'Sample Hotel', city: 'Sample City' });
+});
+
 // Example route to trigger an error
 // This route is just for demonstration purposes to show how the error handling works
 // You can remove this route in production

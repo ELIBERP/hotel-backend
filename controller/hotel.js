@@ -18,4 +18,15 @@ router.get('/', (req, res, next) => {
         .catch(next);
 });
 
+// GET Hotel by ID
+// Cleans up the information before sending it back
+router.get('/:id', (req, res, next) => {
+    const hotelId = req.params.id;
+    hotel.findById(hotelId)
+        .then((hotelData) => {
+            res.status(200).send(hotelData);
+        })
+        .catch(next);
+});
+
 export default { router };
