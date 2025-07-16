@@ -1,13 +1,14 @@
+import { jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
-import hotelRouter from '../../src/controller/hotel.js';
+import hotelRouter from '../../controller/hotel.js';
+import hotel from '../../model/hotel.js';
+
 
 // Mock the model for integration test (optional: you can stub `hotel.findRoomsByID`):
-jest.mock('../../src/model/hotel.js', () => ({
+jest.mock('../../model/hotel.js', () => ({
   findRoomsByID: jest.fn()
 }));
-
-import hotel from '../../src/model/hotel.js';
 
 const app = express();
 app.use(express.json());
