@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:unit": "node --experimental-vm-modules node_modules/.bin/jest tests/unit --coverage",
-    "test:integration": "jest tests/integration --coverage",
+    "test:integration": "node --experimental-vm-modules node_modules/.bin/jest tests/integration --coverage",
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
