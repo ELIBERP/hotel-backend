@@ -1,3 +1,4 @@
+import fetch from 'node-fetch';
 import express from 'express';       
 import jwt from "jsonwebtoken";
 import cors from "cors";
@@ -41,6 +42,24 @@ app.get('/', (req, res, next) => {
 });
 
 app.use('/hotels', hotel.router);
+
+// Proxy route to fetch hotels from external API
+app.get('/api/hotels', async (req, res) => {
+  const { destination_id } = req.query;
+
+  if (!destination_id) {
+    return res.status(400).json({ error: 'Missing destination_id' });
+  }
+
+  try {
+    const response = await fetch(`https://hotelapi.loyalty.dev/api/hotels?destination_id=${destination_id}`);
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error('Error fetching from external API:', err);
+    res.status(500).json({ error: 'Failed to fetch hotels' });
+  }
+});
 
 // Example resource route
 app.get('/hotels', (req, res, next) => {
