@@ -20,7 +20,7 @@ app.use(express.json());
 
 // Configure CORS to only allow requests from localhost:5173 or a specific dev frontend link
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173', // Default to localhost if not set
+  process.env.FRONTEND_URL || 'http://localhost:5174', // Default to localhost if not set
 ];
 
 app.use(cors({
@@ -71,11 +71,28 @@ app.get('/hotels', (req, res, next) => {
 });
 
 // Hotel Page Route
-app.get('/:id', (req, res, next) => {
-  const hotelId = req.params.id;
-  // Placeholder for fetching hotel details by ID
-  res.json({ id: hotelId, name: 'Sample Hotel', city: 'Sample City' });
-});
+app.get('/hotel/:id', (req, res) => {
+    const hotelId = req.params.id;
+    res.json({ id: hotelId, name: 'Sample Hotel', city: 'Sample City' });
+  });
+
+    app.get('/api/hotels/prices', async (req, res) => {
+    const { destination_id, checkin, checkout, lang, currency, country_code, guests, partner_id } = req.query;
+
+    if (!destination_id || !checkin || !checkout || !lang || !currency || !country_code || !guests || !partner_id) {
+      return res.status(400).json({ error: 'Missing required query parameters' });
+    }
+
+    try {
+      const url = `https://hotelapi.loyalty.dev/api/hotels/prices?destination_id=${destination_id}&checkin=${checkin}&checkout=${checkout}&lang=${lang}&currency=${currency}&country_code=${country_code}&guests=${guests}&partner_id=${partner_id}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      res.json(data.hotels || []); // ✅ return only the array of hotel prices
+    } catch (err) {
+      console.error('Error fetching hotel prices:', err);
+      res.status(500).json({ error: 'Failed to fetch hotel prices' });
+    }
+  });
 
 // Example route to trigger an error
 // This route is just for demonstration purposes to show how the error handling works
