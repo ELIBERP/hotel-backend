@@ -20,7 +20,7 @@ app.use(express.json());
 
 // Configure CORS to only allow requests from localhost:5173 or a specific dev frontend link
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5174', // Default to localhost if not set
+  process.env.FRONTEND_URL || 'http://localhost:5173', // Default to localhost if not set
 ];
 
 app.use(cors({
