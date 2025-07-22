@@ -15,33 +15,87 @@ cd esc-hotel/hotel-backend
 npm install
 ```
 
-### 3. Create a `.env` File
+### 3. Database Setup
+This application requires MySQL for data persistence. 
+
+**Quick Setup:**
+```sh
+# Copy environment template
+cp .env.example .env
+
+# Edit .env with your database credentials
+# Then initialize the database
+npm run db:test    # Test connection
+npm run db:init    # Create tables
+```
+
+For detailed database setup instructions, see [DATABASE_SETUP.md](./DATABASE_SETUP.md).
+
+### 4. Create a `.env` File
 Create a `.env` file in the root of the `hotel-backend` directory with the following content:
 
 ```
+# Hotel API
 HOTELAPI=INSERT_GIVEN_URL
 FRONTEND_URL=http://localhost:5173
 PRODUCTION_URL=https://your-production-frontend-url.com
+
+# Database (required for booking system)
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=hotel_app_user
+DB_PASSWORD=your_secure_password
+DB_NAME=hotel_booking_db
+
+# JWT Authentication
+JWT_SECRET=your_jwt_secret_key_here
+JWT_EXPIRE=24h
 ```
 - `HOTELAPI`: The base URL for the hotel API (default provided).
 - `FRONTEND_URL`: The URL of your frontend development server (default: localhost:5173).
 - `PRODUCTION_URL`: The URL of your deployed frontend (if any).
+- `DB_*`: Database connection credentials (see DATABASE_SETUP.md for details).
+- `JWT_*`: JSON Web Token configuration for authentication.
 
-### 4. Run the Server
+### 5. Run the Server
 ```sh
+# Development mode with auto-restart
+npm run dev
+
+# Production mode
 npm start
 ```
 The server will run on `http://localhost:3000` by default.
+
+## Available Scripts
+
+```sh
+# Server Commands
+npm start              # Start server in production mode
+npm run dev           # Start server in development mode (with nodemon)
+
+# Database Commands
+npm run db:test       # Test database connection
+npm run db:init       # Initialize database tables
+npm run db:reset      # Reset database (drop and recreate tables)
+
+# Testing Commands
+npm run test:unit         # Run unit tests
+npm run test:integration  # Run integration tests
+```
 
 ## Project Structure
 
 - `controller/` — Route handlers and controllers (e.g., `hotel.js`).
 - `model/` — Data access and business logic (e.g., `hotel.js`).
 - `middleware/` — Express middleware (e.g., `auth.js`).
-- `config/` — Configuration files (e.g., `config.js`).
-- `routes/` — (Optional) Additional route definitions.
+- `config/` — Configuration files (e.g., `config.js`, `database.js`).
+- `scripts/` — Database setup and management scripts.
+- `tests/` — Unit and integration tests.
 - `errors.js` — Custom error classes and error codes.
 - `index.js` — Main entry point for the Express app.
+- `DATABASE_SETUP.md` — Detailed database setup instructions.
+- `.env.example` — Template for environment variables.
 
 ### Adding New Files
 - **Controllers**: Add new route logic in the `controller/` folder. Export a router from each controller file.
