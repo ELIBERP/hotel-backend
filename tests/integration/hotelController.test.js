@@ -4,8 +4,7 @@ import express from 'express';
 import hotelRouter from '../../controller/hotel.js';
 import hotel from '../../model/hotel.js';
 
-
-// Mock the model for integration test (optional: you can stub `hotel.findRoomsByID`):
+// Mock the model for integration test
 jest.mock('../../model/hotel.js', () => ({
   findRoomsByID: jest.fn()
 }));
@@ -15,7 +14,8 @@ app.use(express.json());
 app.use('/hotels', hotelRouter.router);
 
 describe('GET /hotels/:id/prices', () => {
-  it('should return 200 and rooms data', async () => {
+  
+  it('should return 200 and rooms data when rooms are available', async () => {
     const mockRoomsData = {
       completed: true,
       rooms: [{ roomDescription: 'Mock Room' }]
@@ -31,7 +31,27 @@ describe('GET /hotels/:id/prices', () => {
     expect(res.body).toEqual(mockRoomsData);
     expect(hotel.findRoomsByID).toHaveBeenCalledWith(
       'test-hotel-id',
-      expect.objectContaining({ guests: '2' })  // note query params are strings!
+      expect.objectContaining({ guests: '2' })
+    );
+  });
+
+  it('should return 200 and empty rooms data when no rooms are available', async () => {
+    const mockEmptyRoomsData = {
+      completed: false,
+      rooms: []
+    };
+
+    hotel.findRoomsByID.mockResolvedValueOnce(mockEmptyRoomsData);
+
+    const res = await request(app)
+      .get('/hotels/test-hotel-id/prices')
+      .query({ guests: 2 });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual(mockEmptyRoomsData);
+    expect(hotel.findRoomsByID).toHaveBeenCalledWith(
+      'test-hotel-id',
+      expect.objectContaining({ guests: '2' })
     );
   });
 
