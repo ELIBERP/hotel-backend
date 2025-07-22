@@ -8,6 +8,8 @@ import * as errors from './errors.js';
 import { ERROR_CODE } from './errors.js';
 
 import hotel from './controller/hotel.js';
+import auth from './controller/authController.js';
+import { validatePassword } from './middleware/auth.js';
 
 // this file runs in sequential order, so import the errors module should always be at the bottom
 
@@ -40,6 +42,10 @@ app.get('/', (req, res, next) => {
   res.send('Welcome to the Hotel API!');
 });
 
+// Authentication routes - must come before other routes
+app.use('/auth', auth.router);
+
+// Hotel routes - make sure this comes after auth
 app.use('/hotels', hotel.router);
 
 // Example resource route
