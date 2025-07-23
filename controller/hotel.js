@@ -40,10 +40,58 @@ router.get('/:id/prices', (req, res, next) => {
     const lang = req.query.lang;
     const currency = req.query.currency;
     const country_code = req.query.country_code;
-    const guests = req.query.guests;
+    let guests = req.query.guests;
     const partner_id = req.query.partner_id;
 
-    const query  = {
+    // Validate required fields
+    if (!destination_id) {
+        return res.status(400).json({ error: 'destination_id is required' });
+    }
+
+    // Validate and parse dates
+    if (checkin) {
+        const checkinDate = new Date(checkin);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (isNaN(checkinDate.getTime())) {
+            return res.status(400).json({ error: 'Invalid checkin date format' });
+        }
+        
+        if (checkinDate < today) {
+            return res.status(400).json({ error: 'Check-in date cannot be in the past' });
+        }
+    }
+
+    if (checkout) {
+        const checkoutDate = new Date(checkout);
+        
+        if (isNaN(checkoutDate.getTime())) {
+            return res.status(400).json({ error: 'Invalid checkout date format' });
+        }
+        
+        if (checkin) {
+            const checkinDate = new Date(checkin);
+            if (checkoutDate <= checkinDate) {
+                return res.status(400).json({ error: 'Check-out date must be after check-in date' });
+            }
+        }
+    }
+
+    // Validate and convert guests
+    if (guests) {
+        const guestCount = parseInt(guests, 10);
+        
+        if (isNaN(guestCount) || guestCount <= 0 || guestCount > 10) {
+            return res.status(400).json({ error: 'Invalid guest count. Must be between 1 and 10' });
+        }
+        
+        guests = guestCount;
+    } else {
+        guests = 2; // Default guest count
+    }
+
+    const query = {
         destination_id,
         checkin,
         checkout,
