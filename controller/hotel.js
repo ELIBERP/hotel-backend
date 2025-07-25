@@ -1,11 +1,12 @@
 import express from 'express';
 import * as errors from '../errors.js';
-
+import { cacheMiddleware } from '../middleware/cache.js';
 import hotel from '../model/hotel.js';
 
 const router = express.Router();
 
-router.get('/', (req, res, next) => {
+// Cache hotels list by destination_id for 10 minutes
+router.get('/', cacheMiddleware(600), (req, res, next) => {
     // Fetch all hotels from destination_id
     var destination_id = req.query.destination_id;
     
@@ -20,7 +21,8 @@ router.get('/', (req, res, next) => {
 
 // GET Hotel by ID
 // Cleans up the information before sending it back
-router.get('/:id', (req, res, next) => {
+// Cache individual hotel for 15 minutes
+router.get('/:id', cacheMiddleware(900), (req, res, next) => {
     const hotelId = req.params.id;
     hotel.findById(hotelId)
         .then((hotelData) => {
@@ -30,7 +32,8 @@ router.get('/:id', (req, res, next) => {
 });
 
 // GET Hotel Rooms by ID
-router.get('/:id/prices', (req, res, next) => {
+// Cache hotel prices for 5 minutes (prices change more frequently)
+router.get('/:id/prices', cacheMiddleware(300), (req, res, next) => {
     const hotelId = req.params.id;
     
     // Get the queries like ?checkin=...&checkout=...
