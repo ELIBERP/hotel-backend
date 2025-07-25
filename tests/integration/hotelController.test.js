@@ -1,47 +1,50 @@
-import request from 'supertest';
-import express from 'express';
-import hotelRouter from '../../src/controller/hotel.js';
+import { jest } from '@jest/globals';
+import hotel from '../../model/hotel.js';
 
-// Mock the model for integration test (optional: you can stub `hotel.findRoomsByID`):
-jest.mock('../../src/model/hotel.js', () => ({
-  findRoomsByID: jest.fn()
-}));
+describe('Integration: hotel.findRoomsByID', () => {
+  // Increase timeout if API is slow or polling takes time
+  jest.setTimeout(15000);
 
-import hotel from '../../src/model/hotel.js';
-
-const app = express();
-app.use(express.json());
-app.use('/hotels', hotelRouter.router);
-
-describe('GET /hotels/:id/prices', () => {
-  it('should return 200 and rooms data', async () => {
-    const mockRoomsData = {
-      completed: true,
-      rooms: [{ roomDescription: 'Mock Room' }]
+  it('should retrieve rooms from the real API for a valid hotel ID', async () => {
+    const realHotelId = 'diH7'; // use a real hotel ID you know works
+    const query = {
+      destination_id: 'WD0M',
+      checkin: '2025-10-10',
+      checkout: '2025-10-17',
+      guests: 2,
+      currency: 'SGD',
+      country_code: 'SG',
+      lang: 'en_US',
+      partner_id: 1,
     };
 
-    hotel.findRoomsByID.mockResolvedValueOnce(mockRoomsData);
+    const data = await hotel.findRoomsByID(realHotelId, query);
 
-    const res = await request(app)
-      .get('/hotels/test-hotel-id/prices')
-      .query({ guests: 2 });
+    expect(data).toHaveProperty('completed', true);
+    expect(Array.isArray(data.rooms)).toBe(true);
+    expect(data.rooms.length).toBeGreaterThan(0);
 
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toEqual(mockRoomsData);
-    expect(hotel.findRoomsByID).toHaveBeenCalledWith(
-      'test-hotel-id',
-      expect.objectContaining({ guests: '2' })  // note query params are strings!
-    );
+    const room = data.rooms[0];
+    expect(room).toHaveProperty('roomDescription');
+    expect(room).toHaveProperty('converted_price');
   });
 
-  it('should propagate errors properly', async () => {
-    hotel.findRoomsByID.mockRejectedValueOnce(new Error('API failure'));
+  it('should return empty array of rooms for invalid hotel ID', async () => {
+  const query = {
+    destination_id: 'diH7',
+    checkin: '2025-10-10',
+    checkout: '2025-10-17',
+    guests: 2,
+    currency: 'SGD',
+    country_code: 'SG',
+    lang: 'en_US',
+    partner_id: 1,
+  };
 
-    const res = await request(app)
-      .get('/hotels/test-hotel-id/prices')
-      .query({ guests: 2 });
+  const data = await hotel.findRoomsByID('invalid-id-12345', query);
 
-    // Assuming your error middleware sends 500 on unhandled errors:
-    expect(res.statusCode).toBe(500);
-  });
+  expect(data).toHaveProperty('completed', true);
+  expect(Array.isArray(data.rooms)).toBe(true);
+  expect(data.rooms.length).toBe(0);
+});
 });

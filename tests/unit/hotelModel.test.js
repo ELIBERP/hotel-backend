@@ -1,25 +1,22 @@
 import hotel from '../../model/hotel.js';
 import { jest } from '@jest/globals';
 
-
-// Mock `fetch` globally:
 global.fetch = jest.fn();
 
-describe('hotel model', () => {
+describe('hotel.findRoomsByID', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should return room data when API responds with completed=true', async () => {
+  it('should resolve when first response is completed=true', async () => {
     const mockApiResponse = {
       completed: true,
-      rooms: [{ roomDescription: 'Test Room' }]
+      rooms: [{ roomDescription: 'Heritage Room Twin' }]
     };
 
-    // Setup fetch mock to return successful response
     fetch.mockResolvedValueOnce({
       status: 200,
-      json: jest.fn().mockResolvedValue(mockApiResponse),
+      json: jest.fn().mockResolvedValue(mockApiResponse)
     });
 
     const result = await hotel.findRoomsByID('test-hotel-id', { guests: 2 });
@@ -28,14 +25,39 @@ describe('hotel model', () => {
     expect(result).toEqual(mockApiResponse);
   });
 
-  it('should throw an error if response status !== 200', async () => {
+  it('should poll until completed=true is received', async () => {
+    const incompleteResponse = {
+      completed: false,
+      rooms: []
+    };
+
+    const completeResponse = {
+      completed: true,
+      rooms: [{ roomDescription: 'Quay Room' }]
+    };
+
+    fetch
+      .mockResolvedValueOnce({
+        status: 200,
+        json: jest.fn().mockResolvedValue(incompleteResponse)
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        json: jest.fn().mockResolvedValue(completeResponse)
+      });
+
+    const result = await hotel.findRoomsByID('test-hotel-id', { guests: 2 });
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(result).toEqual(completeResponse);
+  });
+
+  it('should throw an error if response is not 200', async () => {
     fetch.mockResolvedValueOnce({
-      status: 404,
-      json: jest.fn(),
+      status: 500,
+      json: jest.fn()
     });
 
-    await expect(hotel.findRoomsByID('invalid-id', {}))
-      .rejects
-      .toThrow('HTTP error! status: 404');
+    await expect(hotel.findRoomsByID('test-hotel-id', {})).rejects.toThrow('HTTP error! status: 500');
   });
 });
