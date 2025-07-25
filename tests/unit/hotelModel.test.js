@@ -1,7 +1,6 @@
 import hotel from '../../model/hotel.js';
 import { jest } from '@jest/globals';
 
-// Mock `fetch` globally:
 global.fetch = jest.fn();
 
 describe('Hotel Model Unit Tests', () => {
@@ -35,31 +34,43 @@ describe('Hotel Model Unit Tests', () => {
       expect(result).toEqual(mockHotels);
     });
 
-    it('should return Error object when API responds with non-200 status', async () => {
-      fetch.mockResolvedValueOnce({
-        status: 404,
-        json: jest.fn(),
-      });
+    it('should resolve when first response is completed=true', async () => {
+      const mockApiResponse = {
+        completed: true,
+        rooms: [{ roomDescription: 'Heritage Room Twin' }]
+      };
 
-      const result = await hotel.find('INVALID');
-
-      expect(result).toBeInstanceOf(Error);
-      expect(result.message).toBe('HTTP error! status: 404');
-    });
-
-    it('should handle undefined destination_id gracefully', async () => {
       fetch.mockResolvedValueOnce({
         status: 200,
-        json: jest.fn().mockResolvedValue([]),
+        json: jest.fn().mockResolvedValue(mockApiResponse)
       });
 
-      const result = await hotel.find(undefined);
+      it('should return Error object when API responds with non-200 status', async () => {
+        fetch.mockResolvedValueOnce({
+          status: 404,
+          json: jest.fn(),
+        });
 
-      expect(fetch).toHaveBeenCalledWith(
-        'https://hotelapi.loyalty.dev/api/hotels?destination_id=undefined',
-        expect.any(Object)
-      );
-      expect(result).toEqual([]);
+        const result = await hotel.find('INVALID');
+
+        expect(result).toBeInstanceOf(Error);
+        expect(result.message).toBe('HTTP error! status: 404');
+      });
+
+      it('should handle undefined destination_id gracefully', async () => {
+        fetch.mockResolvedValueOnce({
+          status: 200,
+          json: jest.fn().mockResolvedValue([]),
+        });
+
+        const result = await hotel.find(undefined);
+
+        expect(fetch).toHaveBeenCalledWith(
+          'https://hotelapi.loyalty.dev/api/hotels?destination_id=undefined',
+          expect.any(Object)
+        );
+        expect(result).toEqual([]);
+      });
     });
   });
 
@@ -212,6 +223,42 @@ describe('Hotel Model Unit Tests', () => {
       expect(fetch).toHaveBeenCalledWith(
         'https://hotelapi.loyalty.dev/api/hotels/hotel123/price?'
       );
+    });
+
+    it('should poll until completed=true is received', async () => {
+      const incompleteResponse = {
+        completed: false,
+        rooms: []
+      };
+
+      const completeResponse = {
+        completed: true,
+        rooms: [{ roomDescription: 'Quay Room' }]
+      };
+
+      fetch
+        .mockResolvedValueOnce({
+          status: 200,
+          json: jest.fn().mockResolvedValue(incompleteResponse)
+        })
+        .mockResolvedValueOnce({
+          status: 200,
+          json: jest.fn().mockResolvedValue(completeResponse)
+        });
+
+      const result = await hotel.findRoomsByID('test-hotel-id', { guests: 2 });
+
+      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(result).toEqual(completeResponse);
+    });
+
+    it('should throw an error if response is not 200', async () => {
+      fetch.mockResolvedValueOnce({
+        status: 500,
+        json: jest.fn()
+      });
+
+      await expect(hotel.findRoomsByID('test-hotel-id', {})).rejects.toThrow('HTTP error! status: 500');
     });
   });
 });
