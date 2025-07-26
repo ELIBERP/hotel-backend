@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import express from 'express';       
 import jwt from "jsonwebtoken";
 import cors from "cors";
@@ -43,24 +42,25 @@ app.get('/', (req, res, next) => {
 
 app.use('/hotels', hotel.router);
 
-
-// // Proxy route to fetch hotels using hotel model
-// app.get('/api/hotels', async (req, res) => {
-//   const { destination_id } = req.query;
-//   if (!destination_id) {
-//     return res.status(400).json({ error: 'Missing destination_id' });
-//   }
-//   try {
-//     const data = await hotel.find(destination_id);
-//     res.json(data);
-//   } catch (err) {
-//     console.error('Error fetching hotels:', err);
-//     res.status(500).json({ error: 'Failed to fetch hotels' });
-//   }
-// });
-
 // Example resource route
-// ...existing code...
+app.get('/hotels', (req, res, next) => {
+  // placeholder data
+  res.json([
+    { id: 1, name: 'Seaside Inn', city: 'Miami' },
+    { id: 2, name: 'Mountain Lodge', city: 'Aspen' }
+  ]);
+});
+
+// Hotel Page Route
+app.get('/:id', (req, res, next) => {
+  const hotelId = req.params.id;
+  // Placeholder for fetching hotel details by ID
+  res.json({ id: hotelId, name: 'Sample Hotel', city: 'Sample City' });
+});
+
+// Example route to trigger an error
+// This route is just for demonstration purposes to show how the error handling works
+// You can remove this route in production
 // It will trigger a 404 error when accessed
 // You can access this route by going to http://localhost:3000/error
 app.get('/error',(req, res, next) => {
