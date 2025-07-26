@@ -9,6 +9,7 @@ import * as errors from './errors.js';
 import { ERROR_CODE } from './errors.js';
 
 import hotel from './controller/hotel.js';
+import cache from './controller/cache.js';
 
 // this file runs in sequential order, so import the errors module should always be at the bottom
 
@@ -42,6 +43,7 @@ app.get('/', (req, res, next) => {
 });
 
 app.use('/hotels', hotel.router);
+app.use('/cache', cache.router);
 
 
 // // Proxy route to fetch hotels using hotel model
@@ -60,7 +62,24 @@ app.use('/hotels', hotel.router);
 // });
 
 // Example resource route
-// ...existing code...
+// app.get('/hotels', (req, res, next) => {
+//   // placeholder data
+//   res.json([
+//     { id: 1, name: 'Seaside Inn', city: 'Miami' },
+//     { id: 2, name: 'Mountain Lodge', city: 'Aspen' }
+//   ]);
+// });
+
+// Hotel Page Route
+app.get('/:id', (req, res, next) => {
+  const hotelId = req.params.id;
+  // Placeholder for fetching hotel details by ID
+  res.json({ id: hotelId, name: 'Sample Hotel', city: 'Sample City' });
+});
+
+// Example route to trigger an error
+// This route is just for demonstration purposes to show how the error handling works
+// You can remove this route in production
 // It will trigger a 404 error when accessed
 // You can access this route by going to http://localhost:3000/error
 app.get('/error',(req, res, next) => {
