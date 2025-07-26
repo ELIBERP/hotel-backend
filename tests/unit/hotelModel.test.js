@@ -45,32 +45,36 @@ describe('Hotel Model Unit Tests', () => {
         json: jest.fn().mockResolvedValue(mockApiResponse)
       });
 
-      it('should return Error object when API responds with non-200 status', async () => {
-        fetch.mockResolvedValueOnce({
-          status: 404,
-          json: jest.fn(),
-        });
+      const result = await hotel.find('WD0M');
 
-        const result = await hotel.find('INVALID');
+      expect(result).toEqual(mockApiResponse);
+    });
 
-        expect(result).toBeInstanceOf(Error);
-        expect(result.message).toBe('HTTP error! status: 404');
+    it('should return Error object when API responds with non-200 status', async () => {
+      fetch.mockResolvedValueOnce({
+        status: 404,
+        json: jest.fn(),
       });
 
-      it('should handle undefined destination_id gracefully', async () => {
-        fetch.mockResolvedValueOnce({
-          status: 200,
-          json: jest.fn().mockResolvedValue([]),
-        });
+      const result = await hotel.find('INVALID');
 
-        const result = await hotel.find(undefined);
+      expect(result).toBeInstanceOf(Error);
+      expect(result.message).toBe('HTTP error! status: 404');
+    });
 
-        expect(fetch).toHaveBeenCalledWith(
-          'https://hotelapi.loyalty.dev/api/hotels?destination_id=undefined',
-          expect.any(Object)
-        );
-        expect(result).toEqual([]);
+    it('should handle undefined destination_id gracefully', async () => {
+      fetch.mockResolvedValueOnce({
+        status: 200,
+        json: jest.fn().mockResolvedValue([]),
       });
+
+      const result = await hotel.find(undefined);
+
+      expect(fetch).toHaveBeenCalledWith(
+        'https://hotelapi.loyalty.dev/api/hotels?destination_id=undefined',
+        expect.any(Object)
+      );
+      expect(result).toEqual([]);
     });
   });
 

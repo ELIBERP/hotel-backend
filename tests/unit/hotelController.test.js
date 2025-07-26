@@ -1,7 +1,6 @@
+import { jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
-import hotelController from '../../controller/hotel.js';
-import { jest } from '@jest/globals';
 
 // Create mock functions
 const mockHotelModel = {
@@ -10,10 +9,20 @@ const mockHotelModel = {
   findRoomsByID: jest.fn()
 };
 
-// Mock the hotel model module
+// Mock the cache middleware to avoid cache-related issues
+const mockCacheMiddleware = jest.fn(() => (req, res, next) => next());
+
+// Mock modules BEFORE importing controller
 jest.unstable_mockModule('../../model/hotel.js', () => ({
   default: mockHotelModel
 }));
+
+jest.unstable_mockModule('../../middleware/cache.js', () => ({
+  cacheMiddleware: mockCacheMiddleware
+}));
+
+// Use dynamic import for the controller
+const { default: hotelController } = await import('../../controller/hotel.js');
 
 const app = express();
 app.use(express.json());
@@ -55,6 +64,7 @@ describe('Hotel Controller Unit Tests', () => {
         .query({ destination_id: 'NONEXISTENT' });
 
       expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual([]);
       expect(mockHotelModel.find).toHaveBeenCalledWith('NONEXISTENT');
     });
 

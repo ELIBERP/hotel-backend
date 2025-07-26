@@ -12,9 +12,8 @@ router.get('/', cacheMiddleware(600), (req, res, next) => {
     
     hotel.find(destination_id)
         .then((hotels) => {
-            if (hotels.length != 0) {
-                res.status(200).send(hotels);
-            }
+            // Always send a response, even if empty
+            res.status(200).send(hotels);
         })
         .catch(next);
 });

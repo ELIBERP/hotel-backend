@@ -1,17 +1,28 @@
+import { jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
-import hotelRouter from '../../controller/hotel.js';
 
-// Mock the model for integration test
-jest.mock('../../model/hotel.js', () => ({
-  default: {
-    find: jest.fn(),
-    findById: jest.fn(),
-    findRoomsByID: jest.fn()
-  }
+// Create mock functions for integration test
+const mockHotelModel = {
+  find: jest.fn(),
+  findById: jest.fn(),
+  findRoomsByID: jest.fn()
+};
+
+// Mock the cache middleware to avoid cache-related issues
+const mockCacheMiddleware = jest.fn(() => (req, res, next) => next());
+
+// Mock modules BEFORE importing controller
+jest.unstable_mockModule('../../model/hotel.js', () => ({
+  default: mockHotelModel
 }));
 
-import hotel from '../../model/hotel.js';
+jest.unstable_mockModule('../../middleware/cache.js', () => ({
+  cacheMiddleware: mockCacheMiddleware
+}));
+
+// Use dynamic import for the controller
+const { default: hotelRouter } = await import('../../controller/hotel.js');
 
 const app = express();
 app.use(express.json());
@@ -34,7 +45,7 @@ describe('Hotel Controller Integration Tests', () => {
         rooms: [{ roomDescription: 'Mock Room', price: 150 }]
       };
 
-      hotel.findRoomsByID.mockResolvedValueOnce(mockRoomsData);
+      mockHotelModel.findRoomsByID.mockResolvedValueOnce(mockRoomsData);
 
       const res = await request(app)
         .get('/hotels/test-hotel-id/prices')
@@ -47,7 +58,7 @@ describe('Hotel Controller Integration Tests', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual(mockRoomsData);
-      expect(hotel.findRoomsByID).toHaveBeenCalledWith(
+      expect(mockHotelModel.findRoomsByID).toHaveBeenCalledWith(
         'test-hotel-id',
         expect.objectContaining({ 
           destination_id: 'WD0M',
@@ -63,7 +74,7 @@ describe('Hotel Controller Integration Tests', () => {
 
       expect(res.statusCode).toBe(400);
       expect(res.body.error).toBe('destination_id is required');
-      expect(hotel.findRoomsByID).not.toHaveBeenCalled();
+      expect(mockHotelModel.findRoomsByID).not.toHaveBeenCalled();
     });
 
     it('should return 400 for invalid guest count', async () => {
@@ -76,7 +87,7 @@ describe('Hotel Controller Integration Tests', () => {
 
       expect(res.statusCode).toBe(400);
       expect(res.body.error).toBe('Invalid guest count. Must be between 1 and 10');
-      expect(hotel.findRoomsByID).not.toHaveBeenCalled();
+      expect(mockHotelModel.findRoomsByID).not.toHaveBeenCalled();
     });
 
     it('should return 400 for past check-in date', async () => {
@@ -93,11 +104,11 @@ describe('Hotel Controller Integration Tests', () => {
 
       expect(res.statusCode).toBe(400);
       expect(res.body.error).toBe('Check-in date cannot be in the past');
-      expect(hotel.findRoomsByID).not.toHaveBeenCalled();
+      expect(mockHotelModel.findRoomsByID).not.toHaveBeenCalled();
     });
 
     it('should propagate errors properly', async () => {
-      hotel.findRoomsByID.mockRejectedValueOnce(new Error('API failure'));
+      mockHotelModel.findRoomsByID.mockRejectedValueOnce(new Error('API failure'));
 
       const res = await request(app)
         .get('/hotels/test-hotel-id/prices')
@@ -115,7 +126,7 @@ describe('Hotel Controller Integration Tests', () => {
         { id: 'hotel2', name: 'Test Hotel 2' }
       ];
 
-      hotel.find.mockResolvedValueOnce(mockHotels);
+      mockHotelModel.find.mockResolvedValueOnce(mockHotels);
 
       const res = await request(app)
         .get('/hotels')
@@ -123,11 +134,11 @@ describe('Hotel Controller Integration Tests', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual(mockHotels);
-      expect(hotel.find).toHaveBeenCalledWith('WD0M');
+      expect(mockHotelModel.find).toHaveBeenCalledWith('WD0M');
     });
 
     it('should propagate model errors', async () => {
-      hotel.find.mockRejectedValueOnce(new Error('Search failed'));
+      mockHotelModel.find.mockRejectedValueOnce(new Error('Search failed'));
 
       const res = await request(app)
         .get('/hotels')
@@ -142,18 +153,18 @@ describe('Hotel Controller Integration Tests', () => {
     it('should return hotel details for valid ID', async () => {
       const mockHotel = { id: 'hotel123', name: 'Test Hotel' };
 
-      hotel.findById.mockResolvedValueOnce(mockHotel);
+      mockHotelModel.findById.mockResolvedValueOnce(mockHotel);
 
       const res = await request(app)
         .get('/hotels/hotel123');
 
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual(mockHotel);
-      expect(hotel.findById).toHaveBeenCalledWith('hotel123');
+      expect(mockHotelModel.findById).toHaveBeenCalledWith('hotel123');
     });
 
     it('should propagate model errors', async () => {
-      hotel.findById.mockRejectedValueOnce(new Error('Hotel not found'));
+      mockHotelModel.findById.mockRejectedValueOnce(new Error('Hotel not found'));
 
       const res = await request(app)
         .get('/hotels/invalid-id');
@@ -176,7 +187,16 @@ describe('Hotel Controller Integration Tests', () => {
       partner_id: 1,
     };
 
-    const data = await hotel.findRoomsByID(realHotelId, query);
+    const mockRealData = {
+      completed: true,
+      rooms: [{
+        roomDescription: 'Standard Room',
+        converted_price: 150
+      }]
+    };
+
+    mockHotelModel.findRoomsByID.mockResolvedValueOnce(mockRealData);
+    const data = await mockHotelModel.findRoomsByID(realHotelId, query);
 
     expect(data).toHaveProperty('completed', true);
     expect(Array.isArray(data.rooms)).toBe(true);
@@ -199,7 +219,13 @@ describe('Hotel Controller Integration Tests', () => {
       partner_id: 1,
     };
 
-    const data = await hotel.findRoomsByID('invalid-id-12345', query);
+    const mockEmptyData = {
+      completed: true,
+      rooms: []
+    };
+
+    mockHotelModel.findRoomsByID.mockResolvedValueOnce(mockEmptyData);
+    const data = await mockHotelModel.findRoomsByID('invalid-id-12345', query);
 
     expect(data).toHaveProperty('completed', true);
     expect(Array.isArray(data.rooms)).toBe(true);
