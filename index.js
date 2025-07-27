@@ -8,6 +8,7 @@ import * as errors from './errors.js';
 import { ERROR_CODE } from './errors.js';
 
 import hotel from './controller/hotel.js';
+import cache from './controller/cache.js';
 
 // this file runs in sequential order, so import the errors module should always be at the bottom
 
@@ -41,15 +42,16 @@ app.get('/', (req, res, next) => {
 });
 
 app.use('/hotels', hotel.router);
+app.use('/cache', cache.router);
 
 // Example resource route
-app.get('/hotels', (req, res, next) => {
-  // placeholder data
-  res.json([
-    { id: 1, name: 'Seaside Inn', city: 'Miami' },
-    { id: 2, name: 'Mountain Lodge', city: 'Aspen' }
-  ]);
-});
+// app.get('/hotels', (req, res, next) => {
+//   // placeholder data
+//   res.json([
+//     { id: 1, name: 'Seaside Inn', city: 'Miami' },
+//     { id: 2, name: 'Mountain Lodge', city: 'Aspen' }
+//   ]);
+// });
 
 // Hotel Page Route
 app.get('/:id', (req, res, next) => {
