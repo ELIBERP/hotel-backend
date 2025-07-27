@@ -54,7 +54,7 @@ const validateLoginInput = (data) => {
     return errors;
 };
 
-// User Registration Route
+// User Registration Route POST handler
 router.post('/register', async (req, res) => {
     try {
         console.log('Registration attempt:', { email: req.body.email, hasPassword: !!req.body.password });

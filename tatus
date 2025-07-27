@@ -1,0 +1,117 @@
+[33mcommit ad9f8b88f0493b919d871c5375bd54e41977ca6e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature4[m[33m, [m[1;31morigin/feature4[m[33m)[m
+Author: Kydinhvan <101254140+Kydinhvan@users.noreply.github.com>
+Date:   Wed Jul 23 00:28:53 2025 +0800
+
+    feat: Complete user authentication system with registration and login
+
+[33mcommit fab37f605cd7ec45eb250fe850fddff6e7a9ba3c[m
+Author: Kydinhvan <101254140+Kydinhvan@users.noreply.github.com>
+Date:   Tue Jul 22 20:39:24 2025 +0800
+
+    feat: Add MySQL database setup for booking system
+    
+    - Add complete database schema with users, bookings, and payment_sessions tables
+    - Implement database connection pool with mysql2
+    - Add database management scripts (init, reset, test)
+    - Include comprehensive setup documentation (DATABASE_SETUP.md)
+    - Update README with database setup instructions
+    - Add environment configuration template (.env.example)
+    - Fix connection pool cleanup for clean script exit
+    
+    Features:
+    - User authentication schema ready
+    - Booking system database structure
+    - Payment tracking system
+    - Team-friendly setup with detailed docs
+    - Production-ready with connection pooling
+
+[33mcommit 6be140fe753fe31f4a41892b2c4a6e7c3006619e[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Merge: a0c3f27 63a0a15
+Author: kingster121 <48852120+kingster121@users.noreply.github.com>
+Date:   Thu Jul 17 01:13:45 2025 +0800
+
+    Merge pull request #3 from ELIBERP/github_actions
+    
+    Added Github Actions testing
+
+[33mcommit 63a0a151539603caae8d9f6921cfe1e40f6fc182[m
+Author: kingster121 <48852120+kingster121@users.noreply.github.com>
+Date:   Thu Jul 17 00:46:43 2025 +0800
+
+    Added Github Actions testing
+
+[33mcommit a0c3f27ecb72408fc146a13345cb1f424ccefa09[m
+Merge: 79efa4e b37d71a
+Author: kingster121 <48852120+kingster121@users.noreply.github.com>
+Date:   Sun Jul 13 18:46:53 2025 +0800
+
+    Merge pull request #2 from ELIBERP/Feature_3
+    
+    Updated findRoomsbyID API
+
+[33mcommit b37d71af64a35cdd285395431ffff0874c3a694e[m[33m ([m[1;31morigin/Feature_3[m[33m)[m
+Author: kingster121 <48852120+kingster121@users.noreply.github.com>
+Date:   Sun Jul 13 18:45:25 2025 +0800
+
+    Updated findRoomsbyID API
+    
+    Keeps polling until the "completed" becomes true
+
+[33mcommit 79efa4ea1197f6e0531c41364750ab60b40e58ad[m
+Merge: e4911ce 8a7e10e
+Author: kingster121 <48852120+kingster121@users.noreply.github.com>
+Date:   Sun Jul 13 17:46:12 2025 +0800
+
+    Merge pull request #1 from ELIBERP/Feature_3
+    
+    Added Hotel Rooms by ID
+
+[33mcommit 8a7e10e22dd312c9006df95ed2afdbce43101973[m
+Author: kingster121 <48852120+kingster121@users.noreply.github.com>
+Date:   Sun Jul 13 17:35:16 2025 +0800
+
+    Added Hotel Rooms by ID
+
+[33mcommit e4911ce875a3e751085b76aa4160de5400b72b75[m
+Author: kingster121 <48852120+kingster121@users.noreply.github.com>
+Date:   Sun Jul 13 01:03:18 2025 +0800
+
+    Added hotel page
+    
+    Routes directly to Ascenda API
+
+[33mcommit 52bdfe256e69922643af63bb68be9806b015803d[m
+Author: ELIBERP <elizz2beeth@gmail.com>
+Date:   Tue Jul 1 01:00:16 2025 +0800
+
+    add readme
+
+[33mcommit a78621b0f34629fd5821af8a5bdd63a8e642ff65[m
+Author: ELIBERP <elizz2beeth@gmail.com>
+Date:   Tue Jul 1 00:39:44 2025 +0800
+
+    add CORS
+
+[33mcommit 38691337da080fd2a61fc9f465d03aec9884b415[m
+Author: ELIBERP <elizz2beeth@gmail.com>
+Date:   Mon Jun 30 23:48:21 2025 +0800
+
+    added destination search
+
+[33mcommit ba2959091396d418c60e1321c499df586153b98b[m
+Author: eLIBERP <elizz2beeth@gmail.com>
+Date:   Fri Jun 27 00:34:23 2025 +0800
+
+    Delete node_modules directory
+
+[33mcommit 4b433e9674762cd0c5ddf8c6e9ba23f93c5f450b[m
+Author: ELIBERP <elizz2beeth@gmail.com>
+Date:   Fri Jun 27 00:33:50 2025 +0800
+
+    add gitignore
+
+[33mcommit e0bf0ee09108aaba793950bb08b2d6db08510252[m
+Author: ELIBERP <elizz2beeth@gmail.com>
+Date:   Fri Jun 27 00:25:21 2025 +0800
+
+    first commit

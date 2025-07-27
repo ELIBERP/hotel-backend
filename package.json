@@ -11,7 +11,9 @@
     "dev": "nodemon index.js",
     "db:init": "node scripts/initDb.js",
     "db:reset": "node scripts/initDb.js --reset",
-    "db:test": "node testDb.js"
+    "db:test": "node testDb.js",
+    "db:seed": "node scripts/seed.js",
+    "db:seed:sql": "mysql -u %REACT_DB_USERNAME% -p%REACT_DB_PW% -h %REACT_DB_HOST% %REACT_DB_NAME% < db/seed.sql"
   },
   "keywords": [],
   "author": "",
