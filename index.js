@@ -10,6 +10,7 @@ import { ERROR_CODE } from './errors.js';
 import hotel from './controller/hotel.js';
 import auth from './controller/authController.js';
 import { validatePassword } from './middleware/auth.js';
+import cache from './controller/cache.js';
 
 // this file runs in sequential order, so import the errors module should always be at the bottom
 
@@ -47,6 +48,7 @@ app.use('/auth', auth.router);
 
 // Hotel routes - make sure this comes after auth
 app.use('/hotels', hotel.router);
+app.use('/cache', cache.router);
 
 // Example route to trigger an error
 // This route is just for demonstration purposes to show how the error handling works

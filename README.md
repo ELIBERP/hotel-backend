@@ -106,6 +106,10 @@ npm run test:integration  # Run integration tests
 
 > **Tip:** Keep controllers focused on handling requests/responses, and models focused on data/business logic. This keeps the codebase modular and maintainable.
 
+## Adding new test cases
+- Use **/tests/unit** to test the business logic of the APIs. Mock the response of the API
+- Use **/tests/integration** to test the actual working of the APIs
+
 ## Example Requests
 
 You can use tools like [Postman](https://www.postman.com/) or [curl](https://curl.se/) to test the backend.
