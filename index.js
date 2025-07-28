@@ -8,6 +8,8 @@ import * as errors from './errors.js';
 import { ERROR_CODE } from './errors.js';
 
 import hotel from './controller/hotel.js';
+import auth from './controller/authController.js';
+import { validatePassword } from './middleware/auth.js';
 import cache from './controller/cache.js';
 
 // this file runs in sequential order, so import the errors module should always be at the bottom
@@ -41,40 +43,12 @@ app.get('/', (req, res, next) => {
   res.send('Welcome to the Hotel API!');
 });
 
+// Authentication routes - must come before other routes
+app.use('/auth', auth.router);
+
+// Hotel routes - make sure this comes after auth
 app.use('/hotels', hotel.router);
 app.use('/cache', cache.router);
-
-
-// // Proxy route to fetch hotels using hotel model
-// app.get('/api/hotels', async (req, res) => {
-//   const { destination_id } = req.query;
-//   if (!destination_id) {
-//     return res.status(400).json({ error: 'Missing destination_id' });
-//   }
-//   try {
-//     const data = await hotel.find(destination_id);
-//     res.json(data);
-//   } catch (err) {
-//     console.error('Error fetching hotels:', err);
-//     res.status(500).json({ error: 'Failed to fetch hotels' });
-//   }
-// });
-
-// Example resource route
-// app.get('/hotels', (req, res, next) => {
-//   // placeholder data
-//   res.json([
-//     { id: 1, name: 'Seaside Inn', city: 'Miami' },
-//     { id: 2, name: 'Mountain Lodge', city: 'Aspen' }
-//   ]);
-// });
-
-// Hotel Page Route
-app.get('/:id', (req, res, next) => {
-  const hotelId = req.params.id;
-  // Placeholder for fetching hotel details by ID
-  res.json({ id: hotelId, name: 'Sample Hotel', city: 'Sample City' });
-});
 
 // Example route to trigger an error
 // This route is just for demonstration purposes to show how the error handling works

@@ -17,8 +17,10 @@ router.get('/', cacheMiddleware(600), (req, res, next) => {
         })
         .catch(next);
 });
+
 router.get('/prices',cacheMiddleware(600), async (req, res) => {
   const { destination_id, checkin, checkout, lang, currency, guests, partner_id, landing_page, product_type } = req.query;
+
   // Validate required fields
   if (!destination_id || !checkin || !checkout || !lang || !currency || !guests || !partner_id || !landing_page || !product_type) {
     return res.status(400).json({ error: 'Missing required query parameters' });
@@ -36,27 +38,16 @@ router.get('/prices',cacheMiddleware(600), async (req, res) => {
       landing_page: 'wl-acme-earn',
       product_type: 'earn'
     };
+
     // Use hotel.find to get all hotels for the destination
     const data = await hotel.findByPrice(query);
     res.status(200).send(data);
-    // if (Array.isArray(data)) {
-    //   const prices = await Promise.all(data.map(async (hotelObj) => {
-    //     try {
-    //       const priceData = await hotel.findRoomsByID(hotelObj.id, query);
-    //       return { hotelId: hotelObj.id, price: priceData };
-    //     } catch (err) {
-    //       return { hotelId: hotelObj.id, error: err.message };
-    //     }
-    //   }));
-    //   res.json(prices);
-    // } else {
-    //   res.json([]);
-    // }
   } catch (err) {
     console.error('Error fetching hotel prices for all hotels:', err);
     res.status(500).json({ error: 'Failed to fetch hotel prices for all hotels' });
   }
 });
+
 // GET Hotel by ID
 // Cleans up the information before sending it back
 // Cache individual hotel for 15 minutes

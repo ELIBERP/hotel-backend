@@ -21,6 +21,7 @@ hotel.find = async (destination_id) => {
     // console.log(data);
     return data;
 }
+
 hotel.findByPrice = async (query) => {
     const params = new URLSearchParams(query);
     const response = await fetch(`${hotelApi}/api/hotels/prices?${params.toString()}`,
@@ -34,11 +35,12 @@ hotel.findByPrice = async (query) => {
     if (response.status !== 200) {
         return new Error(`HTTP error! status: ${response.status}`);
     }
-    console.log(response);
+    // console.log(response);
     const data = await response.json();
     // console.log(data);
     return data;
 }
+
 // Calls the Ascenda /api/hotels/:id API directly and return the result
 hotel.findById = async (hotelId) => {
     const response = await fetch(`${hotelApi}/api/hotels/${hotelId}`);
