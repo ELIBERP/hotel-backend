@@ -1,13 +1,14 @@
 # Database Setup Guide
 
+### Before you begin
 Environment Configuration
-Create a `.env` file in the root directory with your database credentials:
+Create/ add to a `.env` file in the root directory with your database credentials:
 
 ```env
 # Database Configuration
 DB_HOST=localhost
 DB_PORT=3306
-DB_USER=hotel_app_user
+DB_USER=your_hotel_app_user
 DB_PASSWORD=your_secure_password
 DB_NAME=hotel_booking_db
 
@@ -18,8 +19,29 @@ JWT_EXPIRE=24h
 # Server Configuration
 PORT=3000
 ```
+---
+In your MySQL create a schema:
+```sql
+-- Connect to MySQL as root
+mysql -u root -p
 
-### 3. Database Setup
+-- Create database
+CREATE DATABASE hotel_booking_db;
+
+-- Create dedicated user (recommended for security)
+CREATE USER 'your_hotel_app_user'@'localhost' IDENTIFIED BY 'your_secure_password'; -- change this as per needed and update your env accordingly
+
+-- Grant permissions
+GRANT ALL PRIVILEGES ON hotel_booking_db.* TO 'your_hotel_app_user'@'localhost';
+FLUSH PRIVILEGES;
+
+-- Exit MySQL
+EXIT;
+```
+Then initialize the app's database with the code below. 
+
+---
+### 1. Database Setup
 
 **Option A: Automatic Setup (Recommended)**
 ```bash
