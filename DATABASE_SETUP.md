@@ -2,7 +2,7 @@
 
 ### Before you begin
 Environment Configuration
-Create/ add to a `.env` file in the root directory with your database credentials:
+Create or add to a `.env` file in the root directory with your database credentials:
 
 ```env
 # Database Configuration
