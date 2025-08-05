@@ -9,6 +9,7 @@ import { ERROR_CODE } from './errors.js';
 
 import hotel from './controller/hotel.js';
 import auth from './controller/authController.js';
+import booking from './controller/bookingController.js';
 import { validatePassword } from './middleware/auth.js';
 import cache from './controller/cache.js';
 
@@ -45,6 +46,9 @@ app.get('/', (req, res, next) => {
 
 // Authentication routes - must come before other routes
 app.use('/auth', auth.router);
+
+// Protected booking routes - requires JWT authentication
+app.use('/bookings', booking.router);
 
 // Hotel routes - make sure this comes after auth
 app.use('/hotels', hotel.router);

@@ -18,6 +18,7 @@ const verifyToken = (req, res, next) => {
         if (err) {
             res.status(403).send();
         } else {
+            res.locals.userId = decoded.id;
             res.locals.email = decoded.email;
             res.locals.role = decoded.role;
             next();
