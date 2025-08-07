@@ -18,6 +18,36 @@ router.get('/', cacheMiddleware(600), (req, res, next) => {
         .catch(next);
 });
 
+router.get('/prices',cacheMiddleware(600), async (req, res) => {
+  const { destination_id, checkin, checkout, lang, currency, guests, partner_id, landing_page, product_type } = req.query;
+
+  // Validate required fields
+  if (!destination_id || !checkin || !checkout || !lang || !currency || !guests || !partner_id || !landing_page || !product_type) {
+    return res.status(400).json({ error: 'Missing required query parameters' });
+  }
+  try {
+    // Build query for all hotels (no hotelId)
+    const query = {
+      destination_id: destination_id,
+      checkin: checkin,
+      checkout: checkout,
+      lang: 'en-US',
+      currency: 'SGD',
+      guests: guests,
+      partner_id: 1089,
+      landing_page: 'wl-acme-earn',
+      product_type: 'earn'
+    };
+
+    // Use hotel.find to get all hotels for the destination
+    const data = await hotel.findByPrice(query);
+    res.status(200).send(data);
+  } catch (err) {
+    console.error('Error fetching hotel prices for all hotels:', err);
+    res.status(500).json({ error: 'Failed to fetch hotel prices for all hotels' });
+  }
+});
+
 // GET Hotel by ID
 // Cleans up the information before sending it back
 // Cache individual hotel for 15 minutes
@@ -110,5 +140,56 @@ router.get('/:id/prices', cacheMiddleware(300), (req, res, next) => {
         })
         .catch(next);
 });
+
+
+
+// // Proxy route to fetch hotels using hotel model (async/await)
+// router.get('/api/hotels', async (req, res) => {
+//   const { destination_id } = req.query;
+//   if (!destination_id) {
+//     return res.status(400).json({ error: 'Missing destination_id' });
+//   }
+//   try {
+//     const data = await hotel.find(destination_id);
+//     res.json(data);
+//   } catch (err) {
+//     console.error('Error fetching hotels:', err);
+//     res.status(500).json({ error: 'Failed to fetch hotels' });
+//   }
+// });
+
+// // Hotel Page Route using hotel model (async/await)
+// router.get('/api/hotels/:id', async (req, res) => {
+//   const hotelId = req.params.id;
+//   try {
+//     const data = await hotel.findById(hotelId);
+//     res.json(data);
+//   } catch (err) {
+//     console.error('Error fetching hotel by ID:', err);
+//     res.status(500).json({ error: 'Failed to fetch hotel by ID' });
+//   }
+
+// });
+
+// // Hotel prices by ID using hotel model (async/await)
+// // Bulk hotel prices route matching external API signature
+
+// router.get('/api/hotels/:id/prices', async (req, res) => {
+//   const hotelId = req.params.id;
+//   const { destination_id, checkin, checkout, lang, currency, country_code, guests, partner_id } = req.query;
+//   if (!destination_id || !checkin || !checkout || !lang || !currency || !country_code || !guests || !partner_id) {
+//     return res.status(400).json({ error: 'Missing required query parameters' });
+//   }
+//   try {
+//     const query = { destination_id, checkin, checkout, lang, currency, country_code, guests, partner_id };
+//     const data = await hotel.findRoomsByID(hotelId, query);
+//     res.json(data);
+//   } catch (err) {
+//     console.error('Error fetching hotel prices:', err);
+//     res.status(500).json({ error: 'Failed to fetch hotel prices' });
+//   }
+// });
+
+
 
 export default { router };
