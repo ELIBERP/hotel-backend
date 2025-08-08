@@ -13,6 +13,11 @@ import booking from './controller/bookingController.js';
 import { validatePassword } from './middleware/auth.js';
 import cache from './controller/cache.js';
 
+// Import route modules
+import paymentRoutes from './routes/payment.js';
+import bookingRoutes from './routes/booking.js';
+import testPaymentRoutes from './routes/test-payment.js';
+
 // this file runs in sequential order, so import the errors module should always be at the bottom
 
 const app = express();
@@ -21,9 +26,11 @@ const PORT = process.env.PORT || 3000;
 // Built-in middleware to parse JSON bodies
 app.use(express.json());
 
-// Configure CORS to only allow requests from localhost:5173 or a specific dev frontend link
+// Configure CORS to allow requests from both frontend ports
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173', // Default to localhost if not set
+  process.env.FRONTEND_URL || 'http://localhost:5173', // Default frontend port
+  'http://localhost:5174', // Vite dev server alternate port
+  'http://localhost:3000', // Backend port for testing
 ];
 
 app.use(cors({
@@ -47,8 +54,17 @@ app.get('/', (req, res, next) => {
 // Authentication routes - must come before other routes
 app.use('/auth', auth.router);
 
-// Protected booking routes - requires JWT authentication
+// Protected booking routes - requires JWT authentication (main booking controller)
 app.use('/bookings', booking.router);
+
+// Additional booking routes (for compatibility with existing frontend)
+app.use('/api/booking', bookingRoutes);
+
+// Payment processing routes
+app.use('/api/payment', paymentRoutes);
+
+// Test payment routes (for testing without database)
+app.use('/api/test', testPaymentRoutes);
 
 // Hotel routes - make sure this comes after auth
 app.use('/hotels', hotel.router);
