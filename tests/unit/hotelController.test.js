@@ -272,6 +272,24 @@ describe('Hotel Controller Unit Tests', () => {
         expect(res.statusCode).toBe(200);
         expect(mockHotelModel.findRoomsByID).toHaveBeenCalled();
       });
+
+      it('should handle missing checkin when checkout is provided', async () => {
+        const mockRoomsData = { completed: true, rooms: [] };
+        mockHotelModel.findRoomsByID.mockResolvedValueOnce(mockRoomsData);
+
+        const res = await request(app)
+            .get('/hotels/hotel123/prices')
+            .query({
+                destination_id: 'WD0M',
+                // checkin missing/ undefined
+                checkout: '2025-08-15', // checkout present
+                guests: '2'
+            });
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toEqual(mockRoomsData);
+        expect(mockHotelModel.findRoomsByID).toHaveBeenCalled();
+      });
     });
 
     describe('Guest count validation', () => {
