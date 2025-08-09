@@ -51,8 +51,8 @@ describe('Hotel Controller Integration Tests', () => {
         .get('/hotels/test-hotel-id/prices')
         .query({ 
           destination_id: 'WD0M',
-          checkin: '2025-08-01',
-          checkout: '2025-08-05',
+          checkin: '2025-10-10',
+          checkout: '2025-10-17',
           guests: '2' 
         });
 
