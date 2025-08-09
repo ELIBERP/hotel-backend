@@ -13,6 +13,37 @@ router.get('/test', (req, res) => {
     });
 });
 
+// Test token endpoint for JWT testing
+router.post('/test-token', (req, res) => {
+    try {
+        const testPayload = {
+            id: 'test-user-123',
+            email: 'test@example.com',
+            role: 'user'
+        };
+
+        const token = jwt.sign(
+            testPayload,
+            config.JWTKey,
+            { expiresIn: config.JWTExpiry }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Test token created successfully',
+            token: token,
+            payload: testPayload
+        });
+    } catch (error) {
+        console.error('Test token creation error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create test token',
+            error: error.message
+        });
+    }
+});
+
 // Input validation helper
 const validateRegistrationInput = (data) => {
     const { email, password, firstName, lastName } = data;

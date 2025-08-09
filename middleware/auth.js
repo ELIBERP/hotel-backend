@@ -4,20 +4,39 @@ import config from "../config/config.js";
 const verifyToken = (req, res, next) => {
     // Extract the token
     const authHeader = req.headers["authorization"];
+    console.log('Auth header:', authHeader);
+    
     const token = authHeader && authHeader.split(" ")[1];
+    console.log('Extracted token:', token ? `${token.substring(0, 20)}...` : 'null');
 
-    // If token is undefined, user has yet to logged in / token has expired
-    // return status code 401 (Unauthorised - Prompt user to log in)
-    if (token == undefined) {
-        return res.status(401).send();
+    // Check for missing, undefined, or "null" string token
+    if (!token || token === 'null' || token === 'undefined') {
+        console.log('❌ No valid token provided (token is:', token, ')');
+        return res.status(401).json({
+            success: false,
+            message: 'No authentication token provided',
+            error: 'MISSING_TOKEN'
+        });
     }
+
+    console.log('JWT secret key (first 10 chars):', config.JWTKey ? config.JWTKey.substring(0, 10) + '...' : 'undefined');
 
     // Proceed to verify localStorage's token against secret key
     jwt.verify(token, config.JWTKey, (err, decoded) => {
         // If error, incorrect secret key used
         if (err) {
-            res.status(403).send();
+            console.error('❌ JWT verification failed:', err.message);
+            console.error('❌ Error name:', err.name);
+            console.error('❌ Error details:', err);
+            return res.status(403).json({
+                success: false,
+                message: 'Invalid or expired authentication token',
+                error: 'INVALID_TOKEN',
+                details: err.message
+            });
         } else {
+            console.log('✅ JWT verified successfully');
+            console.log('Decoded payload:', decoded);
             res.locals.userId = decoded.id;
             res.locals.email = decoded.email;
             res.locals.role = decoded.role;

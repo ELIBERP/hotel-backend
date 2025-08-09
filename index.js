@@ -15,7 +15,6 @@ import cache from './controller/cache.js';
 
 // Import route modules
 import paymentRoutes from './routes/payment.js';
-import bookingRoutes from './routes/booking.js';
 import testPaymentRoutes from './routes/test-payment.js';
 
 // this file runs in sequential order, so import the errors module should always be at the bottom
@@ -51,14 +50,26 @@ app.get('/', (req, res, next) => {
   res.send('Welcome to the Hotel API!');
 });
 
+// Test endpoint to verify server is working
+app.get('/api/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Server is working correctly',
+    timestamp: new Date().toISOString(),
+    nodeVersion: process.version
+  });
+});
+
 // Authentication routes - must come before other routes
 app.use('/auth', auth.router);
 
-// Protected booking routes - requires JWT authentication (main booking controller)
-app.use('/bookings', booking.router);
+// Stripe webhook - MUST come before express.json() middleware
+if (booking.webhookRouter) {
+    app.use('/api/bookings', booking.webhookRouter);
+}
 
-// Additional booking routes (for compatibility with existing frontend)
-app.use('/api/booking', bookingRoutes);
+// Protected booking routes - requires JWT authentication (main booking controller)
+app.use('/api/bookings', booking.router);
 
 // Payment processing routes
 app.use('/api/payment', paymentRoutes);
