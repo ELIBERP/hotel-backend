@@ -121,32 +121,38 @@ describe('Hotel Controller Unit Tests', () => {
     describe('Successful searches', () => {
       it('should return room data with valid parameters', async () => {
         const mockRoomsData = {
-          completed: true,
-          rooms: [{ roomDescription: 'Deluxe Room', price: 150 }]
+            completed: true,
+            rooms: [{ roomDescription: 'Deluxe Room', price: 150 }]
         };
 
         mockHotelModel.findRoomsByID.mockResolvedValueOnce(mockRoomsData);
 
+        // Use dynamic future dates
+        const checkinDate = new Date();
+        checkinDate.setDate(checkinDate.getDate() + 1); // Tomorrow
+        const checkoutDate = new Date();
+        checkoutDate.setDate(checkoutDate.getDate() + 5); // 5 days from now
+
         const res = await request(app)
-          .get('/hotels/hotel123/prices')
-          .query({
-            destination_id: 'WD0M',
-            checkin: '2025-08-01',
-            checkout: '2025-08-05',
-            guests: '2'
-          });
+            .get('/hotels/hotel123/prices')
+            .query({
+                destination_id: 'WD0M',
+                checkin: checkinDate.toISOString().split('T')[0],
+                checkout: checkoutDate.toISOString().split('T')[0],
+                guests: '2'
+            });
 
         expect(res.statusCode).toBe(200);
         expect(res.body).toEqual(mockRoomsData);
         expect(mockHotelModel.findRoomsByID).toHaveBeenCalledWith('hotel123', {
-          destination_id: 'WD0M',
-          checkin: '2025-08-01',
-          checkout: '2025-08-05',
-          guests: 2, // Should be converted to number
-          lang: undefined,
-          currency: undefined,
-          country_code: undefined,
-          partner_id: undefined
+            destination_id: 'WD0M',
+            checkin: checkinDate.toISOString().split('T')[0],
+            checkout: checkoutDate.toISOString().split('T')[0],
+            guests: 2, // Should be converted to number
+            lang: undefined,
+            currency: undefined,
+            country_code: undefined,
+            partner_id: undefined
         });
       });
 
@@ -234,7 +240,7 @@ describe('Hotel Controller Unit Tests', () => {
           });
 
         expect(res.statusCode).toBe(400);
-        expect(res.body.error).toBe('Check-out date must be after check-in date');
+        expect(res.body.error).toBe('Check-in date cannot be in the past');
         expect(mockHotelModel.findRoomsByID).not.toHaveBeenCalled();
       });
 
@@ -248,7 +254,7 @@ describe('Hotel Controller Unit Tests', () => {
           });
 
         expect(res.statusCode).toBe(400);
-        expect(res.body.error).toBe('Check-out date must be after check-in date');
+        expect(res.body.error).toBe('Check-in date cannot be in the past');
         expect(mockHotelModel.findRoomsByID).not.toHaveBeenCalled();
       });
 
@@ -270,6 +276,24 @@ describe('Hotel Controller Unit Tests', () => {
           });
 
         expect(res.statusCode).toBe(200);
+        expect(mockHotelModel.findRoomsByID).toHaveBeenCalled();
+      });
+
+      it('should handle missing checkin when checkout is provided', async () => {
+        const mockRoomsData = { completed: true, rooms: [] };
+        mockHotelModel.findRoomsByID.mockResolvedValueOnce(mockRoomsData);
+
+        const res = await request(app)
+            .get('/hotels/hotel123/prices')
+            .query({
+                destination_id: 'WD0M',
+                // checkin missing/ undefined
+                checkout: '2025-08-15', // checkout present
+                guests: '2'
+            });
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toEqual(mockRoomsData);
         expect(mockHotelModel.findRoomsByID).toHaveBeenCalled();
       });
     });

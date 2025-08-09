@@ -18,7 +18,7 @@ router.get('/', cacheMiddleware(600), (req, res, next) => {
         .catch(next);
 });
 
-router.get('/prices',cacheMiddleware(600), async (req, res) => {
+router.get('/prices', async (req, res) => {
   const { destination_id, checkin, checkout, lang, currency, guests, partner_id, landing_page, product_type } = req.query;
 
   // Validate required fields
