@@ -31,7 +31,7 @@ const verifyAdmin = (req, res, next) => {
     const curUserRole = res.locals.role;
 
     // if matches, proceed to next middleware
-    if (curUserRole.toLowerCase() === "admin") {
+    if (curUserRole && curUserRole.toLowerCase() === "admin") {
         next();
     }
 
