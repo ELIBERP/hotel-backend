@@ -1,0 +1,133 @@
+### Health Check
+GET http://localhost:3000/api/test-payment/health
+
+### Stripe Connection Test
+GET http://localhost:3000/api/test-payment/stripe-test
+
+### Create Payment Session
+POST http://localhost:3000/api/test-payment/create-session
+Content-Type: application/json
+
+{
+  "amount": 5000,
+  "currency": "usd",
+  "hotelName": "Test Hotel API",
+  "customerEmail": "test@example.com"
+}
+
+### Test Minimum Payment
+POST http://localhost:3000/api/test-payment/test-min-payment
+
+### Test Maximum Payment
+POST http://localhost:3000/api/test-payment/test-max-payment
+
+### Test Multi-Currency USD
+POST http://localhost:3000/api/test-payment/test-multi-currency
+Content-Type: application/json
+
+{
+  "currency": "usd"
+}
+
+### Test Multi-Currency SGD
+POST http://localhost:3000/api/test-payment/test-multi-currency
+Content-Type: application/json
+
+{
+  "currency": "sgd"
+}
+
+### Test Invalid Currency (should fail)
+POST http://localhost:3000/api/test-payment/test-multi-currency
+Content-Type: application/json
+
+{
+  "currency": "xyz"
+}
+
+### Test Zero Amount (should fail)
+POST http://localhost:3000/api/test-payment/test-invalid-params
+Content-Type: application/json
+
+{
+  "testType": "zero_amount"
+}
+
+### Test Negative Amount (should fail)
+POST http://localhost:3000/api/test-payment/test-invalid-params
+Content-Type: application/json
+
+{
+  "testType": "negative_amount"
+}
+
+### Simulate Stripe Error
+POST http://localhost:3000/api/test-payment/simulate-stripe-error
+Content-Type: application/json
+
+{
+  "errorType": "rate_limit_error"
+}
+
+### Test Webhook Simulation
+POST http://localhost:3000/api/test-payment/simulate-webhook
+Content-Type: application/json
+
+{
+  "eventType": "checkout.session.completed",
+  "sessionId": "cs_test_12345"
+}
+
+### Create Test Booking
+POST http://localhost:3000/api/test-payment/create-booking
+Content-Type: application/json
+
+{
+  "hotelName": "Test Hotel",
+  "checkIn": "2025-12-01",
+  "checkOut": "2025-12-03",
+  "guests": 2,
+  "customerEmail": "test@example.com"
+}
+
+### Get All Bookings
+GET http://localhost:3000/api/test-payment/bookings
+
+### Test Booking Validation (Valid)
+POST http://localhost:3000/api/test-payment/test-booking-validation
+Content-Type: application/json
+
+{
+  "hotelName": "Test Hotel",
+  "checkIn": "2025-12-01",
+  "checkOut": "2025-12-03",
+  "guests": 2,
+  "customerEmail": "valid@example.com",
+  "testType": "comprehensive"
+}
+
+### Test Booking Validation (Invalid - should fail)
+POST http://localhost:3000/api/test-payment/test-booking-validation
+Content-Type: application/json
+
+{
+  "hotelName": "",
+  "checkIn": "2024-01-01",
+  "checkOut": "2023-12-01",
+  "guests": 0,
+  "customerEmail": "invalid-email",
+  "testType": "boundary"
+}
+
+### Complete Workflow Test
+POST http://localhost:3000/api/test-payment/complete-workflow
+Content-Type: application/json
+
+{
+  "hotelName": "Workflow Test Hotel",
+  "customerEmail": "workflow@example.com",
+  "amount": 20000
+}
+
+### Run Comprehensive Test Suite
+POST http://localhost:3000/api/test-payment/run-test-suite
