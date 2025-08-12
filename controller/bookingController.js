@@ -99,6 +99,7 @@ router.post('/create-payment-session', async (req, res) => {
             
             // Room and pricing - handle both backend and frontend field names
             room_type: req.body.room_type,
+            room_types: req.body.room_types || [req.body.room_type || 'Standard Room'],
             total_price: req.body.total_price,
             currency: req.body.currency,
             
@@ -515,6 +516,7 @@ router.post('/', async (req, res) => {
             
             // Room and pricing
             room_type: req.body.room_type || req.body.roomType || req.body.room,
+            room_types: req.body.room_types || req.body.roomTypes || [req.body.room_type || req.body.roomType || req.body.room || 'Standard Room'],
             total_price: req.body.total_price || req.body.totalAmount || req.body.price,
             currency: req.body.currency || 'SGD',
             
@@ -737,10 +739,16 @@ router.get('/:id', async (req, res) => {
         // Parse JSON fields that were stored as strings
         let parsedRoomTypes;
         try {
-            parsedRoomTypes = booking.room_types ? JSON.parse(booking.room_types) : [];
+            if (typeof booking.room_types === 'string') {
+                parsedRoomTypes = JSON.parse(booking.room_types);
+            } else if (Array.isArray(booking.room_types)) {
+                parsedRoomTypes = booking.room_types;
+            } else {
+                parsedRoomTypes = [];
+            }
         } catch (e) {
             console.warn('Failed to parse room_types JSON, using fallback:', booking.room_types);
-            parsedRoomTypes = booking.room_types || [];
+            parsedRoomTypes = ['Standard Room']; // Provide a default value instead of empty
         }
 
         res.status(200).json({
@@ -806,10 +814,16 @@ publicRouter.get('/find/:id', async (req, res) => {
         // Parse JSON fields that were stored as strings
         let parsedRoomTypes;
         try {
-            parsedRoomTypes = booking.room_types ? JSON.parse(booking.room_types) : [];
+            if (typeof booking.room_types === 'string') {
+                parsedRoomTypes = JSON.parse(booking.room_types);
+            } else if (Array.isArray(booking.room_types)) {
+                parsedRoomTypes = booking.room_types;
+            } else {
+                parsedRoomTypes = [];
+            }
         } catch (e) {
             console.warn('Failed to parse room_types JSON, using fallback:', booking.room_types);
-            parsedRoomTypes = booking.room_types || [];
+            parsedRoomTypes = ['Standard Room']; // Provide a default value instead of empty
         }
 
         // Return comprehensive booking information
