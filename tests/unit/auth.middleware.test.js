@@ -1,19 +1,21 @@
-import { jest, describe, test, beforeAll, beforeEach, expect } from '@jest/globals';
+import { jest, describe, test, beforeEach, expect } from '@jest/globals';
+import jwt from 'jsonwebtoken';
+import { verifyToken, verifyAdmin, checkToken, validatePassword } from '../../middleware/auth.js';
+
+// Mock the config module with a realistic secret
+jest.mock('../../config/config.js', () => ({
+    default: {
+        JWTKey: 'super-secret-key-for-testing-purposes-only'
+    }
+}));
+
+// Import the mocked config to use the same secret
+import config from '../../config/config.js';
 
 describe('Auth Middleware Tests', () => {
     let authMiddleware;
     let req, res, next;
-
-    beforeAll(async () => {
-        try {
-            // Dynamically import the ES module
-            const authModule = await import('../../middleware/auth.js');
-            authMiddleware = authModule.default || authModule;
-        } catch (error) {
-            console.log('Could not import auth middleware:', error.message);
-            // Continue with mock tests if import fails
-        }
-    });
+    const TEST_JWT_SECRET = 'super-secret-key-for-testing-purposes-only';
 
     beforeEach(() => {
         req = {
@@ -30,193 +32,420 @@ describe('Auth Middleware Tests', () => {
         jest.clearAllMocks();
     });
 
-    describe('Token Validation Logic', () => {
-        test('should extract token from Bearer authorization header', () => {
-            const authHeader = 'Bearer abc123token';
-            const token = authHeader && authHeader.split(' ')[1];
-            
-            expect(token).toBe('abc123token');
-        });
+    describe('verifyToken', () => {
+        test('should return 401 when no authorization header is provided', () => {
+            verifyToken(req, res, next);
 
-        test('should handle malformed authorization header', () => {
-            const authHeader = 'InvalidFormat';
-            const token = authHeader && authHeader.split(' ')[1];
-            
-            expect(token).toBeUndefined();
-        });
-
-        test('should handle empty Bearer token', () => {
-            const authHeader = 'Bearer ';
-            const token = authHeader && authHeader.split(' ')[1];
-            
-            expect(token).toBe('');
-        });
-
-        test('should handle undefined authorization header', () => {
-            const authHeader = undefined;
-            const token = authHeader && authHeader.split(' ')[1];
-            
-            expect(token).toBeUndefined();
-        });
-    });
-
-    describe('Role Validation Logic', () => {
-        test('should validate admin role (case insensitive)', () => {
-            const roles = ['admin', 'ADMIN', 'Admin', 'aDmIn'];
-            
-            roles.forEach(role => {
-                expect(role.toLowerCase()).toBe('admin');
-            });
-        });
-
-        test('should reject non-admin roles', () => {
-            const roles = ['user', 'guest', 'moderator', ''];
-            
-            roles.forEach(role => {
-                expect(role.toLowerCase()).not.toBe('admin');
-            });
-        });
-
-        test('should handle undefined role safely', () => {
-            const role = undefined;
-            
-            // This simulates the fix we made to the middleware
-            const isAdmin = role && role.toLowerCase() === 'admin';
-            expect(isAdmin).toBeFalsy(); // Use toBeFalsy to handle undefined/false
-        });
-    });
-
-    describe('Password Validation Logic', () => {
-        test('should validate password requirements', () => {
-            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
-            
-            const validPasswords = [
-                'Test123!',
-                'Password1@',
-                'MySecret9#',
-                'ValidPass8$'
-            ];
-            
-            const invalidPasswords = [
-                'test123!',      // no uppercase
-                'TEST123!',      // no lowercase  
-                'TestPass!',     // no number
-                'TestPass123',   // no special char
-                'Test1!',        // too short
-                ''               // empty
-            ];
-
-            validPasswords.forEach(password => {
-                expect(passwordRegex.test(password)).toBe(true);
-            });
-
-            invalidPasswords.forEach(password => {
-                expect(passwordRegex.test(password)).toBe(false);
-            });
-        });
-    });
-
-    describe('HTTP Response Patterns', () => {
-        test('should return 401 for unauthorized access', () => {
-            res.status(401).send();
-            
             expect(res.status).toHaveBeenCalledWith(401);
-            expect(res.send).toHaveBeenCalled();
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: 'No authentication token provided',
+                error: 'MISSING_TOKEN'
+            });
+            expect(next).not.toHaveBeenCalled();
         });
 
-        test('should return 403 for forbidden access', () => {
-            res.status(403).send();
-            
-            expect(res.status).toHaveBeenCalledWith(403);
-            expect(res.send).toHaveBeenCalled();
+        test('should return 401 when authorization header is empty', () => {
+            req.headers.authorization = '';
+
+            verifyToken(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: 'No authentication token provided',
+                error: 'MISSING_TOKEN'
+            });
+            expect(next).not.toHaveBeenCalled();
         });
 
-        test('should return 400 with error message', () => {
-            const errorMessage = { message: "Password must include at least 1 number, special character and upper case " };
-            res.status(400).send(errorMessage);
-            
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.send).toHaveBeenCalledWith(errorMessage);
+        test('should return 401 when token is "null" string', () => {
+            req.headers.authorization = 'Bearer null';
+
+            verifyToken(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: 'No authentication token provided',
+                error: 'MISSING_TOKEN'
+            });
+            expect(next).not.toHaveBeenCalled();
         });
 
-        test('should set user data in locals', () => {
-            const userData = {
-                userId: 'user123',
-                email: 'test@example.com',
-                role: 'user'
-            };
-            
-            res.locals.userId = userData.userId;
-            res.locals.email = userData.email;
-            res.locals.role = userData.role;
-            
-            expect(res.locals.userId).toBe(userData.userId);
-            expect(res.locals.email).toBe(userData.email);
-            expect(res.locals.role).toBe(userData.role);
+        test('should return 401 when token is "undefined" string', () => {
+            req.headers.authorization = 'Bearer undefined';
+
+            verifyToken(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                message: 'No authentication token provided',
+                error: 'MISSING_TOKEN'
+            });
+            expect(next).not.toHaveBeenCalled();
         });
 
-        test('should call next middleware on success', () => {
-            next();
-            
-            expect(next).toHaveBeenCalled();
-        });
-    });
+        test('should return 403 when token is invalid', (done) => {
+            req.headers.authorization = 'Bearer invalid-token';
 
-    describe('JWT Token Structure', () => {
-        test('should have expected JWT payload structure', () => {
-            const mockPayload = {
+            // Override res.json to check when the error response is sent
+            res.json = jest.fn((response) => {
+                try {
+                    expect(res.status).toHaveBeenCalledWith(403);
+                    expect(response).toEqual(
+                        expect.objectContaining({
+                            success: false,
+                            message: 'Invalid or expired authentication token',
+                            error: 'INVALID_TOKEN'
+                        })
+                    );
+                    expect(next).not.toHaveBeenCalled();
+                    done();
+                } catch (error) {
+                    done(error);
+                }
+                return res;
+            });
+
+            verifyToken(req, res, next);
+        });
+
+        test('should call next() and set res.locals when token is valid', async () => {
+            const payload = {
                 id: 'user123',
                 email: 'test@example.com',
                 role: 'user'
             };
+            const validToken = jwt.sign(payload, TEST_JWT_SECRET);
+            req.headers.authorization = `Bearer ${validToken}`;
+
+            // Create a promise that resolves when next() is called
+            const nextPromise = new Promise((resolve, reject) => {
+                next = jest.fn(() => {
+                    try {
+                        expect(res.locals.userId).toBe('user123');
+                        expect(res.locals.email).toBe('test@example.com');
+                        expect(res.locals.role).toBe('user');
+                        expect(next).toHaveBeenCalled();
+                        expect(res.status).not.toHaveBeenCalled();
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+
+                // Set a timeout to reject if next() is never called
+                setTimeout(() => {
+                    reject(new Error('next() was not called within timeout'));
+                }, 1000);
+            });
+
+            verifyToken(req, res, next);
             
-            expect(mockPayload).toHaveProperty('id');
-            expect(mockPayload).toHaveProperty('email');
-            expect(mockPayload).toHaveProperty('role');
-            expect(typeof mockPayload.id).toBe('string');
-            expect(typeof mockPayload.email).toBe('string');
-            expect(typeof mockPayload.role).toBe('string');
+            // Wait for the promise to resolve
+            await nextPromise;
         });
 
-        test('should validate email format in token', () => {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            const validEmails = ['test@example.com', 'user@domain.org'];
-            const invalidEmails = ['invalid-email', 'test@', '@domain.com'];
-            
-            validEmails.forEach(email => {
-                expect(emailRegex.test(email)).toBe(true);
+        test('should return 403 when token is expired', (done) => {
+            const payload = {
+                id: 'user123',
+                email: 'test@example.com',
+                role: 'user',
+                exp: Math.floor(Date.now() / 1000) - 60 // expired 1 minute ago
+            };
+            const expiredToken = jwt.sign(payload, TEST_JWT_SECRET);
+            req.headers.authorization = `Bearer ${expiredToken}`;
+
+            // Override res.json to check when the error response is sent
+            res.json = jest.fn((response) => {
+                try {
+                    expect(res.status).toHaveBeenCalledWith(403);
+                    expect(response).toEqual(
+                        expect.objectContaining({
+                            success: false,
+                            message: 'Invalid or expired authentication token',
+                            error: 'INVALID_TOKEN'
+                        })
+                    );
+                    expect(next).not.toHaveBeenCalled();
+                    done();
+                } catch (error) {
+                    done(error);
+                }
+                return res;
             });
-            
-            invalidEmails.forEach(email => {
-                expect(emailRegex.test(email)).toBe(false);
-            });
+
+            verifyToken(req, res, next);
         });
     });
 
-    describe('Middleware Error Handling', () => {
-        test('should handle JWT verification errors', () => {
-            const mockError = new Error('Invalid token');
-            
-            // Simulate error handling
-            const hasError = mockError instanceof Error;
-            expect(hasError).toBe(true);
-            expect(mockError.message).toBe('Invalid token');
+    describe('verifyAdmin', () => {
+        test('should call next() when user role is admin (lowercase)', () => {
+            res.locals.role = 'admin';
+
+            verifyAdmin(req, res, next);
+
+            expect(next).toHaveBeenCalled();
+            expect(res.status).not.toHaveBeenCalled();
         });
 
-        test('should handle missing token scenarios', () => {
-            const scenarios = [
-                undefined,           // no header
-                '',                 // empty header
-                'Bearer',           // incomplete Bearer
-                'Bearer ',          // empty token
-                'InvalidFormat'     // wrong format
-            ];
-            
-            scenarios.forEach(header => {
-                const token = header && header.split(' ')[1];
-                const hasValidToken = token && token.trim() !== '';
-                expect(hasValidToken).toBeFalsy();
+        test('should call next() when user role is ADMIN (uppercase)', () => {
+            res.locals.role = 'ADMIN';
+
+            verifyAdmin(req, res, next);
+
+            expect(next).toHaveBeenCalled();
+            expect(res.status).not.toHaveBeenCalled();
+        });
+
+        test('should call next() when user role is Admin (mixed case)', () => {
+            res.locals.role = 'Admin';
+
+            verifyAdmin(req, res, next);
+
+            expect(next).toHaveBeenCalled();
+            expect(res.status).not.toHaveBeenCalled();
+        });
+
+        test('should return 403 when user role is not admin', () => {
+            res.locals.role = 'user';
+
+            verifyAdmin(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.send).toHaveBeenCalled();
+            expect(next).not.toHaveBeenCalled();
+        });
+
+        test('should return 403 when user role is not set', () => {
+            // res.locals.role is undefined
+
+            verifyAdmin(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.send).toHaveBeenCalled();
+            expect(next).not.toHaveBeenCalled();
+        });
+
+        test('should return 403 when user role is empty string', () => {
+            res.locals.role = '';
+
+            verifyAdmin(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.send).toHaveBeenCalled();
+            expect(next).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('checkToken', () => {
+        test('should return 401 when no authorization header is provided', (done) => {
+            // Override res.json to check when the error response is sent
+            res.json = jest.fn((response) => {
+                try {
+                    expect(res.status).toHaveBeenCalledWith(401);
+                    expect(response).toEqual({
+                        message: 'invalid or expired token'
+                    });
+                    expect(next).not.toHaveBeenCalled();
+                    done();
+                } catch (error) {
+                    done(error);
+                }
+                return res;
             });
+
+            checkToken(req, res, next);
+        });
+
+        test('should return 401 when token is invalid', (done) => {
+            req.headers.authorization = 'Bearer invalid-token';
+
+            // Override res.json to check when the error response is sent
+            res.json = jest.fn((response) => {
+                try {
+                    expect(res.status).toHaveBeenCalledWith(401);
+                    expect(response).toEqual({
+                        message: 'invalid or expired token'
+                    });
+                    expect(next).not.toHaveBeenCalled();
+                    done();
+                } catch (error) {
+                    done(error);
+                }
+                return res;
+            });
+
+            checkToken(req, res, next);
+        });
+
+        test('should call next() and set res.locals when token is valid', async () => {
+            const payload = {
+                email: 'test@example.com',
+                randomId: 'random123'
+            };
+            const validToken = jwt.sign(payload, TEST_JWT_SECRET);
+            req.headers.authorization = `Bearer ${validToken}`;
+
+            // Create a promise that resolves when next() is called
+            const nextPromise = new Promise((resolve, reject) => {
+                next = jest.fn(() => {
+                    try {
+                        expect(res.locals.email).toBe('test@example.com');
+                        expect(res.locals.randomId).toBe('random123');
+                        expect(next).toHaveBeenCalled();
+                        expect(res.status).not.toHaveBeenCalled();
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+
+                // Set a timeout to reject if next() is never called
+                setTimeout(() => {
+                    reject(new Error('next() was not called within timeout'));
+                }, 1000);
+            });
+
+            checkToken(req, res, next);
+            
+            // Wait for the promise to resolve
+            await nextPromise;
+        });
+
+        test('should return 401 when token is expired', (done) => {
+            const payload = {
+                email: 'test@example.com',
+                randomId: 'random123',
+                exp: Math.floor(Date.now() / 1000) - 60 // expired 1 minute ago
+            };
+            const expiredToken = jwt.sign(payload, config.default.JWTKey);
+            req.headers.authorization = `Bearer ${expiredToken}`;
+
+            // Override res.json to check when the error response is sent
+            res.json = jest.fn((response) => {
+                try {
+                    expect(res.status).toHaveBeenCalledWith(401);
+                    expect(response).toEqual({
+                        message: 'invalid or expired token'
+                    });
+                    expect(next).not.toHaveBeenCalled();
+                    done();
+                } catch (error) {
+                    done(error);
+                }
+                return res;
+            });
+
+            checkToken(req, res, next);
+        });
+    });
+
+    describe('validatePassword', () => {
+        test('should call next() when password meets all requirements', () => {
+            req.body.password = 'ValidPass123!';
+
+            validatePassword(req, res, next);
+
+            expect(next).toHaveBeenCalled();
+            expect(res.status).not.toHaveBeenCalled();
+        });
+
+        test('should return 400 when password lacks uppercase letter', () => {
+            req.body.password = 'invalidpass123!';
+
+            validatePassword(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.send).toHaveBeenCalledWith({
+                message: "Password must include at least 1 number, special character and upper case "
+            });
+            expect(next).not.toHaveBeenCalled();
+        });
+
+        test('should return 400 when password lacks lowercase letter', () => {
+            req.body.password = 'INVALIDPASS123!';
+
+            validatePassword(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.send).toHaveBeenCalledWith({
+                message: "Password must include at least 1 number, special character and upper case "
+            });
+            expect(next).not.toHaveBeenCalled();
+        });
+
+        test('should return 400 when password lacks number', () => {
+            req.body.password = 'InvalidPass!';
+
+            validatePassword(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.send).toHaveBeenCalledWith({
+                message: "Password must include at least 1 number, special character and upper case "
+            });
+            expect(next).not.toHaveBeenCalled();
+        });
+
+        test('should return 400 when password lacks special character', () => {
+            req.body.password = 'InvalidPass123';
+
+            validatePassword(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.send).toHaveBeenCalledWith({
+                message: "Password must include at least 1 number, special character and upper case "
+            });
+            expect(next).not.toHaveBeenCalled();
+        });
+
+        test('should return 400 when password is too short', () => {
+            req.body.password = 'Short1!';
+
+            validatePassword(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.send).toHaveBeenCalledWith({
+                message: "Password must include at least 1 number, special character and upper case "
+            });
+            expect(next).not.toHaveBeenCalled();
+        });
+
+        test('should call next() with various valid special characters', () => {
+            const validPasswords = [
+                'ValidPass123!',
+                'ValidPass123@',
+                'ValidPass123#',
+                'ValidPass123$',
+                'ValidPass123%',
+                'ValidPass123^',
+                'ValidPass123&',
+                'ValidPass123*'
+            ];
+
+            validPasswords.forEach(password => {
+                req.body.password = password;
+                jest.clearAllMocks();
+
+                validatePassword(req, res, next);
+
+                expect(next).toHaveBeenCalled();
+                expect(res.status).not.toHaveBeenCalled();
+            });
+        });
+
+        test('should return 400 when password is missing from request body', () => {
+            // req.body.password is undefined
+
+            validatePassword(req, res, next);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.send).toHaveBeenCalledWith({
+                message: "Password must include at least 1 number, special character and upper case "
+            });
+            expect(next).not.toHaveBeenCalled();
         });
     });
 });

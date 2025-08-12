@@ -22,9 +22,6 @@ import testPaymentRoutes from './routes/test-payment.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Built-in middleware to parse JSON bodies
-app.use(express.json());
-
 // Configure CORS to allow requests from both frontend ports
 const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:5173', // Default frontend port
@@ -45,6 +42,14 @@ app.use(cors({
   credentials: true
 }));
 
+// Stripe webhook - MUST come before express.json() middleware and needs raw body
+if (booking.webhookRouter) {
+    app.use('/api/stripe', booking.webhookRouter);
+}
+
+// Built-in middleware to parse JSON bodies (AFTER webhook routes)
+app.use(express.json());
+
 // Basic route
 app.get('/', (req, res, next) => {
   res.send('Welcome to the Hotel API!');
@@ -63,13 +68,16 @@ app.get('/api/test', (req, res) => {
 // Authentication routes - must come before other routes
 app.use('/auth', auth.router);
 
-// Stripe webhook - MUST come before express.json() middleware
-if (booking.webhookRouter) {
-    app.use('/api/bookings', booking.webhookRouter);
+// 🔓 PUBLIC booking routes - no authentication required (different path to avoid conflicts)
+if (booking.publicRouter) {
+    app.use('/api/public/bookings', booking.publicRouter);
 }
 
 // Protected booking routes - requires JWT authentication (main booking controller)
 app.use('/api/bookings', booking.router);
+
+// Add direct /bookings route for frontend compatibility
+app.use('/bookings', booking.router);
 
 // Payment processing routes
 app.use('/api/payment', paymentRoutes);

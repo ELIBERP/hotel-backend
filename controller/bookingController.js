@@ -2,6 +2,7 @@ import express from 'express';
 import { verifyToken } from '../middleware/auth.js';
 import BookingModel from '../model/booking.js';
 import stripe from '../config/stripe.js';
+import { pool } from '../config/database.js';
 
 const router = express.Router();
 
@@ -12,166 +13,6 @@ router.get('/test', (req, res) => {
         message: 'Booking controller is working',
         timestamp: new Date().toISOString()
     });
-});
-
-// POST /bookings/create-payment-session - Create Stripe session (TEMPORARY: No auth for testing)
-router.post('/create-payment-session-no-auth', async (req, res) => {
-    try {
-        // TEMPORARY: Use mock user data for testing
-        const userId = 'test-user-123';
-        const userEmail = 'test@example.com';
-        
-        console.log(`Creating payment session for test user: ${userId} (${userEmail})`);
-        console.log('Request body:', req.body);
-        
-        // Check Stripe configuration first
-        if (!stripe) {
-            console.warn('Stripe not configured - check STRIPE_SECRET_KEY environment variable');
-            return res.status(500).json({
-                success: false,
-                message: 'Payment system not configured. Please contact support.',
-                error: 'STRIPE_NOT_CONFIGURED'
-            });
-        }
-        
-        // Use mock data if real data not provided (for testing incomplete features)
-        const mockBookingData = {
-            hotel_id: 'hotel-marina-123',
-            hotel_name: 'Grand Marina Hotel Singapore',
-            start_date: '2024-04-01',
-            end_date: '2024-04-03',
-            nights: 2,
-            adults: 2,
-            children: 0,
-            room_type: 'Deluxe Suite',
-            total_price: 500,
-            currency: 'SGD',
-            first_name: 'Test',
-            last_name: 'User',
-            phone: '+447415356955',
-            email: userEmail
-        };
-
-        // Use actual data if provided, otherwise use mock data
-        const bookingData = {
-            // Hotel info
-            hotel_id: req.body.hotel_id || mockBookingData.hotel_id,
-            hotel_name: req.body.hotel_name || req.body.hotelName || mockBookingData.hotel_name,
-            
-            // Dates - handle both backend and frontend field names
-            start_date: req.body.start_date || req.body.checkInDate || mockBookingData.start_date,
-            end_date: req.body.end_date || req.body.checkOutDate || mockBookingData.end_date,
-            nights: req.body.nights || req.body.numberOfNights || mockBookingData.nights,
-            
-            // Guests
-            adults: req.body.adults || req.body.numberOfGuests || mockBookingData.adults,
-            children: req.body.children || 0,
-            
-            // Room and pricing - handle both backend and frontend field names
-            room_type: req.body.room_type || req.body.roomType || mockBookingData.room_type,
-            total_price: req.body.total_price || req.body.totalAmount || mockBookingData.total_price,
-            currency: req.body.currency || mockBookingData.currency,
-            
-            // Guest info - handle both backend and frontend field names
-            first_name: req.body.first_name || req.body.guestName?.split(' ')[0] || mockBookingData.first_name,
-            last_name: req.body.last_name || req.body.guestName?.split(' ').slice(1).join(' ') || mockBookingData.last_name,
-            phone: req.body.phone || mockBookingData.phone,
-            email: userEmail,
-            
-            // Optional fields
-            special_requests: req.body.special_requests || null
-        };
-        
-        console.log('Booking data for payment session:', {
-            hotel: bookingData.hotel_name,
-            dates: `${bookingData.start_date} to ${bookingData.end_date}`,
-            price: `${bookingData.currency} ${bookingData.total_price}`,
-            guest: `${bookingData.first_name} ${bookingData.last_name}`,
-            using_mock: !req.body.hotel_id ? '(using mock data)' : '(real data)'
-        });
-
-        // Validate essential data for Stripe
-        if (!bookingData.total_price || bookingData.total_price <= 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Valid total price is required for payment'
-            });
-        }
-
-        try {
-            console.log('Creating Stripe checkout session...');
-            
-            // Create Stripe checkout session
-            const session = await stripe.checkout.sessions.create({
-                payment_method_types: ['card'],
-                line_items: [{
-                    price_data: {
-                        currency: bookingData.currency?.toLowerCase() || 'sgd',
-                        product_data: {
-                            name: `Hotel Booking - ${bookingData.hotel_name}`,
-                            description: `${bookingData.nights} night(s) from ${bookingData.start_date} to ${bookingData.end_date} for ${bookingData.adults} guest(s)`,
-                        },
-                        unit_amount: Math.round(bookingData.total_price * 100), // Convert to cents
-                    },
-                    quantity: 1,
-                }],
-                mode: 'payment',
-                success_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
-                cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/booking-cancel`,
-                metadata: {
-                    user_id: userId,
-                    user_email: userEmail,
-                    // Store all booking data in metadata for later retrieval
-                    booking_data: JSON.stringify(bookingData)
-                }
-            });
-            
-            console.log('Stripe session created:', session.id);
-            
-            // Return payment URL - NO DATABASE SAVE YET
-            res.status(200).json({
-                success: true,
-                message: 'Payment session created. Booking will be saved after successful payment.',
-                session_id: session.id,
-                payment_url: session.url,
-                bookingPreview: {
-                    hotel: bookingData.hotel_name,
-                    dates: `${bookingData.start_date} to ${bookingData.end_date}`,
-                    guests: bookingData.adults + (bookingData.children || 0),
-                    total: `${bookingData.currency} ${bookingData.total_price}`
-                }
-            });
-            
-        } catch (paymentError) {
-            console.error('❌ Payment session creation failed:', paymentError);
-            console.error('❌ Error details:', {
-                message: paymentError.message,
-                stack: paymentError.stack,
-                code: paymentError.code
-            });
-            
-            res.status(500).json({
-                success: false,
-                message: 'Failed to create payment session',
-                error: 'Payment gateway error',
-                details: process.env.NODE_ENV === 'development' ? paymentError.message : undefined
-            });
-        }
-        
-    } catch (error) {
-        console.error('❌ Error creating payment session:', error);
-        console.error('❌ Error details:', {
-            message: error.message,
-            stack: error.stack,
-            code: error.code
-        });
-        
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create payment session',
-            error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
-        });
-    }
 });
 
 // All booking routes require authentication
@@ -233,7 +74,7 @@ router.post('/create-payment-session', async (req, res) => {
         
         // Check Stripe configuration first
         if (!stripe) {
-            console.warn('⚠️ Stripe not configured - check STRIPE_SECRET_KEY environment variable');
+            console.warn('WARNING: Stripe not configured - check STRIPE_SECRET_KEY environment variable');
             return res.status(500).json({
                 success: false,
                 message: 'Payment system not configured. Please contact support.',
@@ -241,61 +82,37 @@ router.post('/create-payment-session', async (req, res) => {
             });
         }
         
-        // Use mock data if real data not provided (for testing incomplete features)
-        const mockBookingData = {
-            hotel_id: 'hotel-marina-123',
-            hotel_name: 'Grand Marina Hotel Singapore',
-            start_date: '2024-04-01',
-            end_date: '2024-04-03',
-            nights: 2,
-            adults: 2,
-            children: 0,
-            room_type: 'Deluxe Suite',
-            total_price: 500,
-            currency: 'SGD',
-            first_name: 'Dinh Van',
-            last_name: 'Ky',
-            phone: '+447415356955',
-            email: userEmail
-        };
-
-        // Use actual data if provided, otherwise use mock data
+        // Use actual data from request
         const bookingData = {
             // Hotel info
-            hotel_id: req.body.hotel_id || mockBookingData.hotel_id,
-            hotel_name: req.body.hotel_name || req.body.hotelName || mockBookingData.hotel_name,
+            hotel_id: req.body.hotel_id,
+            hotel_name: req.body.hotel_name,
             
             // Dates - handle both backend and frontend field names
-            start_date: req.body.start_date || req.body.checkInDate || mockBookingData.start_date,
-            end_date: req.body.end_date || req.body.checkOutDate || mockBookingData.end_date,
-            nights: req.body.nights || req.body.numberOfNights || mockBookingData.nights,
+            start_date: req.body.start_date,
+            end_date: req.body.end_date,
+            nights: req.body.nights,
             
             // Guests
-            adults: req.body.adults || req.body.numberOfGuests || mockBookingData.adults,
+            adults: req.body.adults,
             children: req.body.children || 0,
             
             // Room and pricing - handle both backend and frontend field names
-            room_type: req.body.room_type || req.body.roomType || mockBookingData.room_type,
-            total_price: req.body.total_price || req.body.totalAmount || mockBookingData.total_price,
-            currency: req.body.currency || mockBookingData.currency,
+            room_type: req.body.room_type,
+            total_price: req.body.total_price,
+            currency: req.body.currency,
             
             // Guest info - handle both backend and frontend field names
-            first_name: req.body.first_name || req.body.guestName?.split(' ')[0] || mockBookingData.first_name,
-            last_name: req.body.last_name || req.body.guestName?.split(' ').slice(1).join(' ') || mockBookingData.last_name,
-            phone: req.body.phone || mockBookingData.phone,
+            first_name: req.body.first_name,
+            last_name: req.body.last_name,
+            phone: req.body.phone,
             email: userEmail,
             
             // Optional fields
             special_requests: req.body.special_requests || null
         };
         
-        console.log('Booking data for payment session:', {
-            hotel: bookingData.hotel_name,
-            dates: `${bookingData.start_date} to ${bookingData.end_date}`,
-            price: `${bookingData.currency} ${bookingData.total_price}`,
-            guest: `${bookingData.first_name} ${bookingData.last_name}`,
-            using_mock: !req.body.hotel_id ? '(using mock data)' : '(real data)'
-        });
+        console.log('Creating payment session for booking:', `${bookingData.currency} ${bookingData.total_price}`);
 
         // Validate essential data for Stripe
         if (!bookingData.total_price || bookingData.total_price <= 0) {
@@ -308,6 +125,9 @@ router.post('/create-payment-session', async (req, res) => {
         try {
             console.log('Creating Stripe checkout session...');
             
+            // Generate unique booking ID to prevent duplicates
+            const pendingBookingId = `booking_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
             // Create Stripe checkout session
             const session = await stripe.checkout.sessions.create({
                 payment_method_types: ['card'],
@@ -318,7 +138,9 @@ router.post('/create-payment-session', async (req, res) => {
                             name: `Hotel Booking - ${bookingData.hotel_name}`,
                             description: `${bookingData.nights} night(s) from ${bookingData.start_date} to ${bookingData.end_date} for ${bookingData.adults} guest(s)`,
                         },
-                        unit_amount: Math.round(bookingData.total_price * 100), // Convert to cents
+                        unit_amount: (['JPY', 'KRW'].includes(bookingData.currency?.toUpperCase())) 
+                            ? Math.round(bookingData.total_price) // Zero-decimal currencies: use amount as-is
+                            : Math.round(bookingData.total_price * 100), // Other currencies: convert to cents
                     },
                     quantity: 1,
                 }],
@@ -328,19 +150,43 @@ router.post('/create-payment-session', async (req, res) => {
                 metadata: {
                     user_id: userId,
                     user_email: userEmail,
+                    booking_id: pendingBookingId, 
                     // Store all booking data in metadata for later retrieval
                     booking_data: JSON.stringify(bookingData)
                 }
             });
             
-            console.log('Stripe session created:', session.id);
+            console.log('Payment session created successfully:', session.id);
+
+            // Create payment session record to track state
+            try {
+                await pool.execute(`
+                    INSERT INTO payment_sessions (
+                        id, booking_id, user_id, session_id, amount, currency,
+                        session_data, status, expires_at, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', DATE_ADD(NOW(), INTERVAL 30 MINUTE), NOW())
+                `, [
+                    `ps_${Date.now()}`,
+                    pendingBookingId,
+                    userId,
+                    session.id,
+                    bookingData.total_price,
+                    bookingData.currency,
+                    JSON.stringify(bookingData)
+                ]);
+                console.log('Payment session tracked in database');
+            } catch (dbError) {
+                console.warn('Failed to track payment session:', dbError.message);
+                // Continue anyway - don't fail the payment flow
+            }
             
-            // Return payment URL - NO DATABASE SAVE YET
+            // Return payment URL - NO BOOKING SAVE YET
             res.status(200).json({
                 success: true,
                 message: 'Payment session created. Booking will be saved after successful payment.',
                 session_id: session.id,
                 payment_url: session.url,
+                booking_id: pendingBookingId, // Return booking ID for tracking
                 bookingPreview: {
                     hotel: bookingData.hotel_name,
                     dates: `${bookingData.start_date} to ${bookingData.end_date}`,
@@ -350,12 +196,7 @@ router.post('/create-payment-session', async (req, res) => {
             });
             
         } catch (paymentError) {
-            console.error('❌ Payment session creation failed:', paymentError);
-            console.error('❌ Error details:', {
-                message: paymentError.message,
-                stack: paymentError.stack,
-                code: paymentError.code
-            });
+            console.error('ERROR: Payment session creation failed:', paymentError.message);
             
             res.status(500).json({
                 success: false,
@@ -366,12 +207,7 @@ router.post('/create-payment-session', async (req, res) => {
         }
         
     } catch (error) {
-        console.error('❌ Error creating payment session:', error);
-        console.error('❌ Error details:', {
-            message: error.message,
-            stack: error.stack,
-            code: error.code
-        });
+        console.error('ERROR: Failed to create payment session:', error.message);
         
         res.status(500).json({
             success: false,
@@ -387,48 +223,202 @@ const webhookRouter = express.Router();
 
 // POST /webhook - Stripe webhook for payment notifications (NO AUTH REQUIRED)
 webhookRouter.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    console.log('WEBHOOK: Received Stripe webhook event');
+
     const sig = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
     
     let event;
     
     try {
-        if (!stripe || !endpointSecret) {
-            console.log('Stripe webhook not configured');
-            return res.status(400).send('Webhook configuration missing');
+        if (!stripe) {
+            console.log('ERROR: Stripe not configured');
+            return res.status(400).send('Stripe not configured');
         }
         
-        event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+        if (!endpointSecret) {
+            console.warn('WARNING: STRIPE_WEBHOOK_SECRET not configured - skipping signature verification (DEVELOPMENT ONLY)');
+            // For development: try to parse the request body as JSON
+            try {
+                event = JSON.parse(req.body.toString());
+                console.log('WEBHOOK: Parsed event without signature verification:', event.type);
+            } catch (parseError) {
+                console.error('ERROR: Failed to parse webhook body:', parseError.message);
+                return res.status(400).send('Invalid JSON body');
+            }
+        } else {
+            console.log('WEBHOOK: Verifying signature...');
+            event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+            console.log('WEBHOOK: Signature verified successfully');
+        }
     } catch (err) {
-        console.log(`❌ Webhook signature verification failed.`, err.message);
+        console.log('ERROR: Webhook signature verification failed:', err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
+    
+    console.log('WEBHOOK: Processing event type:', event.type);
     
     // Handle the checkout.session.completed event
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         
         try {
-            console.log('Payment successful via webhook:', session.id);
+            console.log('WEBHOOK: Payment successful for session:', session.id);
             
-            // Extract booking data from session metadata
-            const bookingData = JSON.parse(session.metadata.booking_data);
+            // Check if this payment session already processed to prevent duplicates
+            const [existingSessions] = await pool.execute(
+                'SELECT id, status FROM payment_sessions WHERE session_id = ?',
+                [session.id]
+            );
             
-            // Save booking to database
-            const newBooking = await BookingModel.create({
-                ...bookingData,
-                booking_status: 'confirmed',
-                payment_reference: session.payment_intent
-            });
+            if (existingSessions.length > 0 && existingSessions[0].status === 'completed') {
+                console.log('WEBHOOK: Payment session already processed, skipping:', session.id);
+                return res.json({ 
+                    received: true, 
+                    success: true,
+                    message: 'Payment session already processed successfully',
+                    status: 'already_completed' 
+                });
+            }
             
-            console.log('✅ Booking auto-saved via webhook:', newBooking.id);
+            //  Use database transaction for atomicity RACE CONDITION SCAYRYYRYR
+            const connection = await pool.getConnection();
+            await connection.beginTransaction();
+            
+            try {
+                // Extract booking data from session metadata
+                const bookingData = JSON.parse(session.metadata.booking_data);
+                const bookingId = session.metadata.booking_id || `booking_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                
+                //  Check if booking already exists (either confirmed or pending)
+                const [existingBookings] = await connection.execute(
+                    'SELECT id, booking_status FROM bookings WHERE payment_reference = ? OR id = ?',
+                    [session.payment_intent, bookingId]
+                );
+                
+                if (existingBookings.length > 0) {
+                    const existingBooking = existingBookings[0];
+                    
+                    if (existingBooking.booking_status === 'confirmed') {
+                        console.log('WEBHOOK: Booking already confirmed for payment:', session.payment_intent);
+                        await connection.rollback();
+                        connection.release();
+                        return res.json({ 
+                            received: true, 
+                            success: true,
+                            message: 'Booking already confirmed for this payment',
+                            status: 'already_confirmed',
+                            bookingId: existingBooking.id
+                        });
+                    } else if (existingBooking.booking_status === 'pending') {
+                        // Update existing pending booking to confirmed
+                        console.log('WEBHOOK: Updating pending booking to confirmed:', existingBooking.id);
+                        
+                        const updateResult = await connection.execute(
+                            'UPDATE bookings SET booking_status = "confirmed", payment_reference = ?, updated_at = NOW() WHERE id = ?',
+                            [session.payment_intent, existingBooking.id]
+                        );
+                        
+                        console.log('WEBHOOK: Booking status updated to confirmed for:', existingBooking.id);
+                        
+                        // Update payment session status
+                        const sessionUpdateResult = await connection.execute(
+                            'UPDATE payment_sessions SET status = "completed", transaction_id = ?, updated_at = NOW() WHERE session_id = ?',
+                            [session.payment_intent, session.id]
+                        );
+                        
+                        await connection.commit();
+                        connection.release();
+                        
+                        console.log('WEBHOOK: Successfully updated existing booking to confirmed:', existingBooking.id);
+                        
+                        return res.json({ 
+                            received: true, 
+                            success: true,
+                            message: 'Existing pending booking updated to confirmed status',
+                            data: {
+                                bookingId: existingBooking.id,
+                                status: 'confirmed',
+                                action: 'status_updated'
+                            }
+                        });
+                    }
+                }
+                
+                // Create the booking with the predetermined ID
+                const newBookingId = bookingId;
+                const bookingResult = await connection.execute(`
+                    INSERT INTO bookings (
+                        id, hotel_id, start_date, end_date, nights, adults, children,
+                        room_types, total_price, currency, first_name, last_name, phone, email,
+                        payment_reference, booking_status, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', NOW(), NOW())
+                `, [
+                    newBookingId,
+                    bookingData.hotel_id,
+                    bookingData.start_date,
+                    bookingData.end_date,
+                    bookingData.nights,
+                    bookingData.adults || 1,
+                    bookingData.children || 0,
+                    JSON.stringify([bookingData.room_type]),
+                    bookingData.total_price,
+                    bookingData.currency,
+                    bookingData.first_name,
+                    bookingData.last_name,
+                    bookingData.phone,
+                    bookingData.email,
+                    session.payment_intent
+                ]);
+                
+                console.log('WEBHOOK: New booking created successfully:', newBookingId);
+                
+                // Update payment session status
+                const sessionUpdateResult = await connection.execute(
+                    'UPDATE payment_sessions SET status = "completed", transaction_id = ?, updated_at = NOW() WHERE session_id = ?',
+                    [session.payment_intent, session.id]
+                );
+                
+                console.log('WEBHOOK: Payment session updated successfully');
+                
+                await connection.commit();
+                connection.release();
+                
+                console.log('WEBHOOK: Booking auto-saved successfully via webhook:', newBookingId);
+                
+                // Return detailed success response
+                return res.json({ 
+                    received: true, 
+                    success: true,
+                    message: 'Booking successfully saved to database via webhook',
+                    data: {
+                        bookingId: newBookingId,
+                        status: 'confirmed'
+                    }
+                });
+                
+            } catch (transactionError) {
+                await connection.rollback();
+                connection.release();
+                throw transactionError;
+            }
             
         } catch (error) {
-            console.error('❌ Error saving booking via webhook:', error);
+            console.error('WEBHOOK: Error saving booking via webhook:', error.message);
+            return res.status(500).json({ 
+                received: true, 
+                success: false,
+                message: 'Failed to save booking to database'
+            });
         }
     }
     
-    res.json({ received: true });
+    // For other event types or unhandled cases
+    res.json({ 
+        received: true, 
+        message: 'Webhook received but no action taken',
+        eventType: event.type 
+    });
 });
 
 // POST /bookings/confirm-payment - Save booking AFTER successful payment
@@ -470,7 +460,7 @@ router.post('/confirm-payment', async (req, res) => {
             payment_reference: session.payment_intent
         });
         
-        console.log('✅ Booking saved successfully:', newBooking.id);
+        console.log('Booking saved successfully:', newBooking.id);
         
         res.status(201).json({
             success: true,
@@ -488,7 +478,7 @@ router.post('/confirm-payment', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Error confirming payment:', error);
+        console.error('ERROR: Failed to confirm payment:', error.message);
         res.status(500).json({
             success: false,
             message: 'Failed to confirm payment and save booking',
@@ -506,10 +496,36 @@ router.post('/', async (req, res) => {
         const userEmail = res.locals.email;
         
         console.log(`Creating booking for user: ${userId} (${userEmail})`);
+        console.log('Request body:', req.body);
         
+        // Map frontend field names to backend field names
         const bookingData = {
-            ...req.body,
-            email: userEmail  // Use authenticated user's email
+            // Hotel info
+            hotel_id: req.body.hotel_id || req.body.hotelId,
+            hotel_name: req.body.hotel_name || req.body.hotelName || req.body.name,
+            
+            // Dates - handle frontend field names
+            start_date: req.body.start_date || req.body.checkIn || req.body.checkInDate,
+            end_date: req.body.end_date || req.body.checkOut || req.body.checkOutDate,
+            nights: req.body.nights || req.body.numberOfNights,
+            
+            // Guests
+            adults: req.body.adults || req.body.numberOfGuests || req.body.guests || 1,
+            children: req.body.children || 0,
+            
+            // Room and pricing
+            room_type: req.body.room_type || req.body.roomType || req.body.room,
+            total_price: req.body.total_price || req.body.totalAmount || req.body.price,
+            currency: req.body.currency || 'SGD',
+            
+            // Guest info - handle frontend field names
+            first_name: req.body.first_name || req.body.firstName || req.body.guestName?.split(' ')[0],
+            last_name: req.body.last_name || req.body.lastName || req.body.guestName?.split(' ').slice(1).join(' '),
+            phone: req.body.phone,
+            email: userEmail,
+            
+            // Optional fields
+            special_requests: req.body.special_requests || req.body.specialRequests
         };
         
         // 1.1.1: Validate Form Data (from sequence diagram)
@@ -565,7 +581,9 @@ router.post('/', async (req, res) => {
                             name: `Hotel Booking - ${bookingData.hotel_name || 'Hotel Stay'}`,
                             description: `${bookingData.nights} night(s) from ${bookingData.start_date} to ${bookingData.end_date}`,
                         },
-                        unit_amount: Math.round(bookingData.total_price * 100), // Convert to cents
+                        unit_amount: (['JPY', 'KRW'].includes(bookingData.currency?.toUpperCase())) 
+                            ? Math.round(bookingData.total_price) // Zero-decimal currencies: use amount as-is
+                            : Math.round(bookingData.total_price * 100), // Other currencies: convert to cents
                     },
                     quantity: 1,
                 }],
@@ -716,6 +734,15 @@ router.get('/:id', async (req, res) => {
             });
         }
         
+        // Parse JSON fields that were stored as strings
+        let parsedRoomTypes;
+        try {
+            parsedRoomTypes = booking.room_types ? JSON.parse(booking.room_types) : [];
+        } catch (e) {
+            console.warn('Failed to parse room_types JSON, using fallback:', booking.room_types);
+            parsedRoomTypes = booking.room_types || [];
+        }
+
         res.status(200).json({
             success: true,
             booking: {
@@ -727,9 +754,11 @@ router.get('/:id', async (req, res) => {
                 nights: booking.nights,
                 adults: booking.adults,
                 children: booking.children,
+                roomTypes: parsedRoomTypes,
                 totalPrice: parseFloat(booking.total_price),
                 currency: booking.currency,
                 status: booking.booking_status,
+                specialRequests: booking.message_to_hotel,
                 guestInfo: {
                     firstName: booking.first_name,
                     lastName: booking.last_name,
@@ -751,7 +780,76 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// Public endpoint to find booking by ID (no authentication required)
+// This creates a separate router for public access
+const publicRouter = express.Router();
+
+publicRouter.get('/find/:id', async (req, res) => {
+    try {
+        const bookingId = req.params.id;
+        
+        console.log(`Public booking search for ID: ${bookingId}`);
+        
+        // Use BookingModel for consistency
+        const booking = await BookingModel.findById(bookingId);
+        
+        if (!booking) {
+            console.log(`Public search: Booking not found for ID: ${bookingId}`);
+            return res.status(404).json({
+                success: false,
+                message: 'Booking not found'
+            });
+        }
+        
+        console.log(`Public search: Booking found for ID: ${bookingId}`);
+        
+        // Parse JSON fields that were stored as strings
+        let parsedRoomTypes;
+        try {
+            parsedRoomTypes = booking.room_types ? JSON.parse(booking.room_types) : [];
+        } catch (e) {
+            console.warn('Failed to parse room_types JSON, using fallback:', booking.room_types);
+            parsedRoomTypes = booking.room_types || [];
+        }
+
+        // Return comprehensive booking information
+        res.status(200).json({
+            success: true,
+            data: {
+                id: booking.id,
+                hotel_id: booking.hotel_id,
+                start_date: booking.start_date,
+                end_date: booking.end_date,
+                nights: booking.nights,
+                adults: booking.adults,
+                children: booking.children,
+                room_types: parsedRoomTypes,
+                total_price: booking.total_price,
+                currency: booking.currency,
+                first_name: booking.first_name,
+                last_name: booking.last_name,
+                phone: booking.phone,
+                email: booking.email,
+                payment_reference: booking.payment_reference,
+                booking_status: booking.booking_status,
+                special_requests: booking.special_requests || booking.message_to_hotel,
+                created_at: booking.created_at,
+                updated_at: booking.updated_at
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error in public booking search:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to find booking',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+        });
+    }
+});
+
 export default { 
     router,
-    webhookRouter 
+    webhookRouter,
+    publicRouter 
 };

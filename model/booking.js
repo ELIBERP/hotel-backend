@@ -38,11 +38,11 @@ class BookingModel {
                 data.payment_reference || null,
                 data.masked_card_number || null,
                 JSON.stringify(data.billing_address || {}),
-                'pending'
+                data.booking_status || 'confirmed'  // Default to confirmed instead of pending
             ]);
             
-            console.log('BookingModel: Booking created successfully');
-            return { id, ...data, booking_status: 'pending', created_at: new Date() };
+            console.log('BookingModel: Booking created successfully with status:', data.booking_status || 'confirmed');
+            return { id, ...data, booking_status: data.booking_status || 'confirmed', created_at: new Date() };
             
         } catch (error) {
             console.error('BookingModel create error:', error);
@@ -128,42 +128,61 @@ class BookingModel {
     static validateBookingData(data) {
         const errors = [];
         
-        // Required fields validation
-        if (!data.hotel_id) errors.push('Hotel ID is required');
-        if (!data.start_date) errors.push('Check-in date is required');
-        if (!data.end_date) errors.push('Check-out date is required');
-        if (!data.first_name?.trim()) errors.push('First name is required');
-        if (!data.last_name?.trim()) errors.push('Last name is required');
+        // Required fields validation - check both frontend and backend field names
+        if (!data.hotel_id && !data.hotelId) errors.push('Hotel ID is required');
+        if (!data.start_date && !data.checkIn && !data.checkInDate) errors.push('Check-in date is required');
+        if (!data.end_date && !data.checkOut && !data.checkOutDate) errors.push('Check-out date is required');
+        if (!data.first_name?.trim() && !data.firstName?.trim()) errors.push('First name is required');
+        if (!data.last_name?.trim() && !data.lastName?.trim()) errors.push('Last name is required');
         if (!data.email?.trim()) errors.push('Email is required');
-        if (!data.total_price || data.total_price <= 0) errors.push('Valid total price is required');
+        if (!data.total_price && !data.price && !data.totalPrice && !data.totalAmount) errors.push('Valid total price is required');
+        
+        // Get actual values for validation
+        const startDate = data.start_date || data.checkIn || data.checkInDate;
+        const endDate = data.end_date || data.checkOut || data.checkOutDate;
+        const totalPrice = data.total_price || data.price || data.totalPrice || data.totalAmount;
         
         // Date validation
-        if (data.start_date && data.end_date) {
-            const startDate = new Date(data.start_date);
-            const endDate = new Date(data.end_date);
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             
-            if (startDate < today) {
+            console.log('Date validation debug:');
+            console.log('- startDate input:', startDate);
+            console.log('- start parsed:', start.toISOString());
+            console.log('- today:', today.toISOString());
+            console.log('- start < today:', start < today);
+            
+            if (start < today) {
                 errors.push('Check-in date cannot be in the past');
             }
             
-            if (endDate <= startDate) {
+            if (end <= start) {
                 errors.push('Check-out date must be after check-in date');
             }
         }
         
         // Email validation
-        if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        const email = data.email;
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             errors.push('Invalid email format');
         }
         
+        // Price validation
+        if (totalPrice && (totalPrice <= 0)) {
+            errors.push('Total price must be greater than 0');
+        }
+        
         // Guest count validation
-        if (data.adults && (data.adults < 1 || data.adults > 10)) {
+        const adults = data.adults || data.guests || data.numberOfGuests;
+        if (adults && (adults < 1 || adults > 10)) {
             errors.push('Adults count must be between 1 and 10');
         }
         
-        if (data.children && (data.children < 0 || data.children > 10)) {
+        const children = data.children;
+        if (children && (children < 0 || children > 10)) {
             errors.push('Children count must be between 0 and 10');
         }
         
