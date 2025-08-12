@@ -26,7 +26,7 @@ class BookingModel {
                 data.nights,
                 data.adults || 1,
                 data.children || 0,
-                data.message_to_hotel || null,
+                data.special_requests || data.specialRequests || null,
                 JSON.stringify(data.room_types || []),
                 data.total_price,
                 data.currency || 'SGD',
