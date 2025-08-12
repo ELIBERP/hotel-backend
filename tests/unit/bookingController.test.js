@@ -348,4 +348,303 @@ describe('Booking Form to Stripe Payment Gateway Tests', () => {
     const stripeCall = stripe.checkout.sessions.create.mock.calls[0][0];
     expect(stripeCall.line_items[0].price_data.currency).toBe('usd'); // Should be lowercase
   });
+
+  // BOUNDARY TESTING SECTION
+  describe('Boundary Value Testing', () => {
+    
+    // Test 9: Price Boundary Testing
+    test('Minimum Valid Price (1 cent) Processed Correctly', async () => {
+      const mockBooking = { id: 'booking_min_price' };
+      
+      BookingModel.validateBookingData.mockReturnValue([]);
+      BookingModel.create.mockResolvedValue(mockBooking);
+      stripe.checkout.sessions.create.mockResolvedValue({
+        id: 'session_min',
+        url: 'https://stripe.com'
+      });
+      
+      await request(app)
+        .post('/bookings')
+        .send({
+          hotel_id: 'hotel_123',
+          start_date: '2025-08-15',
+          end_date: '2025-08-16',
+          first_name: 'Min',
+          last_name: 'Price',
+          total_price: 0.01, // Minimum price
+          currency: 'SGD'
+        });
+      
+      const stripeCall = stripe.checkout.sessions.create.mock.calls[0][0];
+      expect(stripeCall.line_items[0].price_data.unit_amount).toBe(1); // 0.01 * 100 = 1 cent
+    });
+
+    test('Zero Price Should Be Rejected', async () => {
+      BookingModel.validateBookingData.mockReturnValue([
+        'Valid total price is required'
+      ]);
+      
+      const response = await request(app)
+        .post('/bookings')
+        .send({
+          hotel_id: 'hotel_123',
+          start_date: '2025-08-15',
+          end_date: '2025-08-16',
+          first_name: 'Zero',
+          last_name: 'Price',
+          total_price: 0,
+          currency: 'SGD'
+        });
+      
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain('Valid total price is required');
+    });
+
+    test('Negative Price Should Be Rejected', async () => {
+      BookingModel.validateBookingData.mockReturnValue([
+        'Valid total price is required'
+      ]);
+      
+      const response = await request(app)
+        .post('/bookings')
+        .send({
+          hotel_id: 'hotel_123',
+          start_date: '2025-08-15',
+          end_date: '2025-08-16',
+          first_name: 'Negative',
+          last_name: 'Price',
+          total_price: -100,
+          currency: 'SGD'
+        });
+      
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain('Valid total price is required');
+    });
+
+    test('Very Large Price Handled Correctly', async () => {
+      const mockBooking = { id: 'booking_max_price' };
+      
+      BookingModel.validateBookingData.mockReturnValue([]);
+      BookingModel.create.mockResolvedValue(mockBooking);
+      stripe.checkout.sessions.create.mockResolvedValue({
+        id: 'session_max',
+        url: 'https://stripe.com'
+      });
+      
+      await request(app)
+        .post('/bookings')
+        .send({
+          hotel_id: 'hotel_123',
+          start_date: '2025-08-15',
+          end_date: '2025-08-20',
+          first_name: 'Large',
+          last_name: 'Price',
+          total_price: 99999.99, // Very expensive suite
+          currency: 'SGD'
+        });
+      
+      const stripeCall = stripe.checkout.sessions.create.mock.calls[0][0];
+      expect(stripeCall.line_items[0].price_data.unit_amount).toBe(9999999); // 99999.99 * 100
+    });
+
+    // Test 10: String Length Boundary Testing
+    test('Single Character Name Accepted', async () => {
+      const mockBooking = { id: 'booking_single_char' };
+      
+      BookingModel.validateBookingData.mockReturnValue([]);
+      BookingModel.create.mockResolvedValue(mockBooking);
+      stripe.checkout.sessions.create.mockResolvedValue({
+        id: 'session_char',
+        url: 'https://stripe.com'
+      });
+      
+      await request(app)
+        .post('/bookings')
+        .send({
+          hotel_id: 'hotel_123',
+          start_date: '2025-08-15',
+          end_date: '2025-08-16',
+          first_name: 'A', // Single character
+          last_name: 'B',
+          total_price: 100,
+          currency: 'SGD'
+        });
+      
+      expect(BookingModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          first_name: 'A',
+          last_name: 'B'
+        })
+      );
+    });
+
+    test('Very Long Name Should Be Rejected', async () => {
+      const longName = 'A'.repeat(256); // 256 characters
+      
+      BookingModel.validateBookingData.mockReturnValue([
+        'First name too long'
+      ]);
+      
+      const response = await request(app)
+        .post('/bookings')
+        .send({
+          hotel_id: 'hotel_123',
+          start_date: '2025-08-15',
+          end_date: '2025-08-16',
+          first_name: longName,
+          last_name: 'Test',
+          total_price: 100
+        });
+      
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain('First name too long');
+    });
+
+    // Test 11: Date Boundary Testing
+    test('Same Day Booking Should Be Rejected', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      
+      BookingModel.validateBookingData.mockReturnValue([
+        'Check-in date must be in the future'
+      ]);
+      
+      const response = await request(app)
+        .post('/bookings')
+        .send({
+          hotel_id: 'hotel_123',
+          start_date: today, // Today's date
+          end_date: '2025-08-16',
+          first_name: 'Same',
+          last_name: 'Day',
+          total_price: 100
+        });
+      
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain('Check-in date must be in the future');
+    });
+
+    test('End Date Before Start Date Should Be Rejected', async () => {
+      BookingModel.validateBookingData.mockReturnValue([
+        'Check-out date must be after check-in date'
+      ]);
+      
+      const response = await request(app)
+        .post('/bookings')
+        .send({
+          hotel_id: 'hotel_123',
+          start_date: '2025-08-20',
+          end_date: '2025-08-15', // Before start date
+          first_name: 'Invalid',
+          last_name: 'Dates',
+          total_price: 100
+        });
+      
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain('Check-out date must be after check-in date');
+    });
+
+    // Test 12: Numeric Field Boundary Testing
+    test('Zero Adults Should Be Rejected', async () => {
+      BookingModel.validateBookingData.mockReturnValue([
+        'At least 1 adult required'
+      ]);
+      
+      const response = await request(app)
+        .post('/bookings')
+        .send({
+          hotel_id: 'hotel_123',
+          start_date: '2025-08-15',
+          end_date: '2025-08-16',
+          first_name: 'Zero',
+          last_name: 'Adults',
+          adults: 0, // Invalid
+          total_price: 100
+        });
+      
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain('At least 1 adult required');
+    });
+
+    test('Maximum Occupancy Boundary', async () => {
+      const mockBooking = { id: 'booking_max_occupancy' };
+      
+      BookingModel.validateBookingData.mockReturnValue([]);
+      BookingModel.create.mockResolvedValue(mockBooking);
+      stripe.checkout.sessions.create.mockResolvedValue({
+        id: 'session_max_occupancy',
+        url: 'https://stripe.com'
+      });
+      
+      await request(app)
+        .post('/bookings')
+        .send({
+          hotel_id: 'hotel_123',
+          start_date: '2025-08-15',
+          end_date: '2025-08-16',
+          first_name: 'Large',
+          last_name: 'Group',
+          adults: 10, // Maximum adults
+          children: 8, // Maximum children
+          total_price: 2000
+        });
+      
+      expect(BookingModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          adults: 10,
+          children: 8
+        })
+      );
+    });
+
+    // Test 13: Array Boundary Testing
+    test('Empty Room Types Array Should Be Rejected', async () => {
+      BookingModel.validateBookingData.mockReturnValue([
+        'At least one room type required'
+      ]);
+      
+      const response = await request(app)
+        .post('/bookings')
+        .send({
+          hotel_id: 'hotel_123',
+          start_date: '2025-08-15',
+          end_date: '2025-08-16',
+          first_name: 'Empty',
+          last_name: 'Rooms',
+          room_types: [], // Empty array
+          total_price: 100
+        });
+      
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain('At least one room type required');
+    });
+
+    test('Single Room Type Accepted', async () => {
+      const mockBooking = { id: 'booking_single_room' };
+      
+      BookingModel.validateBookingData.mockReturnValue([]);
+      BookingModel.create.mockResolvedValue(mockBooking);
+      stripe.checkout.sessions.create.mockResolvedValue({
+        id: 'session_single_room',
+        url: 'https://stripe.com'
+      });
+      
+      await request(app)
+        .post('/bookings')
+        .send({
+          hotel_id: 'hotel_123',
+          start_date: '2025-08-15',
+          end_date: '2025-08-16',
+          first_name: 'Single',
+          last_name: 'Room',
+          room_types: ['Standard Room'], // Single item
+          total_price: 100
+        });
+      
+      expect(BookingModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          room_types: ['Standard Room']
+        })
+      );
+    });
+  });
 });
