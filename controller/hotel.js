@@ -4,6 +4,7 @@ import { cacheMiddleware } from '../middleware/cache.js';
 import hotel from '../model/hotel.js';
 
 const router = express.Router();
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Cache hotels list by destination_id for 10 minutes
 router.get('/', cacheMiddleware(600), (req, res, next) => {
@@ -18,7 +19,7 @@ router.get('/', cacheMiddleware(600), (req, res, next) => {
         .catch(next);
 });
 
-router.get('/prices', async (req, res) => {
+router.get('/prices', cacheMiddleware(300), async (req, res) => {
   const { destination_id, checkin, checkout, lang, currency, guests, partner_id, landing_page, product_type } = req.query;
 
   // Validate required fields
@@ -40,7 +41,12 @@ router.get('/prices', async (req, res) => {
     };
 
     // Use hotel.find to get all hotels for the destination
-    const data = await hotel.findByPrice(query);
+    var data = await hotel.findByPrice(query);
+    while (data.completed === false) {
+        // Wait for the data to complete
+        await delay(1000); // Poll every second
+        data = await hotel.findByPrice(query);
+    }
     res.status(200).send(data);
   } catch (err) {
     console.error('Error fetching hotel prices for all hotels:', err);
@@ -62,7 +68,7 @@ router.get('/:id', cacheMiddleware(900), (req, res, next) => {
 
 // GET Hotel Rooms by ID
 // Cache hotel prices for 5 minutes (prices change more frequently)
-router.get('/:id/prices', cacheMiddleware(300), (req, res, next) => {
+router.get('/:id/prices', (req, res, next) => {
     const hotelId = req.params.id;
     
     // Get the queries like ?checkin=...&checkout=...
