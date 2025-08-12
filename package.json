@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/",
     "test:payment": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.payment.js",
     "test:payment:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.payment.js --watch",
     "test:payment:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.payment.js --coverage",
