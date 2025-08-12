@@ -4,9 +4,11 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "test:unit": "node --experimental-vm-modules node_modules/.bin/jest tests/unit --coverage",
-    "test:integration": "node --experimental-vm-modules node_modules/.bin/jest tests/integration --coverage",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/",
+    "test:payment": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.payment.js",
+    "test:payment:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.payment.js --watch",
+    "test:payment:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.payment.js --coverage",
     "start": "node index.js",
     "dev": "nodemon index.js",
     "db:init": "node scripts/initDb.js",
@@ -27,6 +29,7 @@
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.14.2",
     "node-cache": "^5.1.2",
+    "stripe": "^18.4.0",
     "supertest": "^7.1.3",
     "uuid": "^11.1.0"
   },

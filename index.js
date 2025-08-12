@@ -9,20 +9,24 @@ import { ERROR_CODE } from './errors.js';
 
 import hotel from './controller/hotel.js';
 import auth from './controller/authController.js';
+import booking from './controller/bookingController.js';
 import { validatePassword } from './middleware/auth.js';
 import cache from './controller/cache.js';
+
+// Import route modules
+import paymentRoutes from './routes/payment.js';
+import testPaymentRoutes from './routes/test-payment.js';
 
 // this file runs in sequential order, so import the errors module should always be at the bottom
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Built-in middleware to parse JSON bodies
-app.use(express.json());
-
-// Configure CORS to only allow requests from localhost:5173 or a specific dev frontend link
+// Configure CORS to allow requests from both frontend ports
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173', // Default to localhost if not set
+  process.env.FRONTEND_URL || 'http://localhost:5173', // Default frontend port
+  'http://localhost:5174', // Vite dev server alternate port
+  'http://localhost:3000', // Backend port for testing
 ];
 
 app.use(cors({
@@ -38,13 +42,48 @@ app.use(cors({
   credentials: true
 }));
 
+// Stripe webhook - MUST come before express.json() middleware and needs raw body
+if (booking.webhookRouter) {
+    app.use('/api/stripe', booking.webhookRouter);
+}
+
+// Built-in middleware to parse JSON bodies (AFTER webhook routes)
+app.use(express.json());
+
 // Basic route
 app.get('/', (req, res, next) => {
   res.send('Welcome to the Hotel API!');
 });
 
+// Test endpoint to verify server is working
+app.get('/api/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Server is working correctly',
+    timestamp: new Date().toISOString(),
+    nodeVersion: process.version
+  });
+});
+
 // Authentication routes - must come before other routes
 app.use('/auth', auth.router);
+
+// 🔓 PUBLIC booking routes - no authentication required (different path to avoid conflicts)
+if (booking.publicRouter) {
+    app.use('/api/public/bookings', booking.publicRouter);
+}
+
+// Protected booking routes - requires JWT authentication (main booking controller)
+app.use('/api/bookings', booking.router);
+
+// Add direct /bookings route for frontend compatibility
+app.use('/bookings', booking.router);
+
+// Payment processing routes
+app.use('/api/payment', paymentRoutes);
+
+// Test payment routes (for testing without database)
+app.use('/api/test', testPaymentRoutes);
 
 // Hotel routes - make sure this comes after auth
 app.use('/hotels', hotel.router);

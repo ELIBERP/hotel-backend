@@ -1,5 +1,7 @@
 import express from 'express';
 import UserModel from '../model/userModel.js';
+import jwt from 'jsonwebtoken';
+import config from '../config/config.js';
 
 const router = express.Router();
 
@@ -9,6 +11,37 @@ router.get('/test', (req, res) => {
         message: 'Auth routes are working!',
         timestamp: new Date().toISOString()
     });
+});
+
+// Test token endpoint for JWT testing
+router.post('/test-token', (req, res) => {
+    try {
+        const testPayload = {
+            id: 'test-user-123',
+            email: 'test@example.com',
+            role: 'user'
+        };
+
+        const token = jwt.sign(
+            testPayload,
+            config.JWTKey,
+            { expiresIn: config.JWTExpiry }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Test token created successfully',
+            token: token,
+            payload: testPayload
+        });
+    } catch (error) {
+        console.error('Test token creation error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create test token',
+            error: error.message
+        });
+    }
 });
 
 // Input validation helper
@@ -161,12 +194,23 @@ router.post('/login', async (req, res) => {
             });
         }
         
-        console.log('Login successful for user:', user.id);
+        const tokenPayload = {
+            id: user.id,
+            email: user.email,
+            role: user.role || 'user'
+        };
+
+        const token = jwt.sign(
+            tokenPayload,                    // Data to store in token
+            config.JWTKey,                   // Secret key from .env
+            { expiresIn: config.JWTExpiry }  // Token expiration (24h)
+        );
         
-        // Return user info (without sensitive data)
+        // Return user info and JWT token (without sensitive data)
         res.status(200).json({ 
             success: true,
             message: 'Login successful', 
+            token: token,
             user: {
                 id: user.id,
                 email: user.email,

@@ -74,14 +74,26 @@ CREATE TABLE IF NOT EXISTS payment_sessions (
   id VARCHAR(255) PRIMARY KEY,
   booking_id VARCHAR(255),
   user_id VARCHAR(255),
+  session_id VARCHAR(255) UNIQUE,
+  
+  -- Payment details
+  amount DECIMAL(10,2),
+  currency VARCHAR(3),
+  payment_method VARCHAR(50),
+  transaction_id VARCHAR(255),
+  
+  -- Session management
   session_data JSON,
+  status ENUM('pending', 'completed', 'failed', 'expired', 'cancelled') DEFAULT 'pending',
   expires_at TIMESTAMP,
-  status ENUM('pending', 'completed', 'failed', 'expired') DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   
   INDEX idx_booking_id (booking_id),
-  INDEX idx_expires_at (expires_at),
-  INDEX idx_status (status)
+  INDEX idx_user_id (user_id),
+  INDEX idx_session_id (session_id),
+  INDEX idx_status (status),
+  INDEX idx_expires_at (expires_at)
 );
 `;
 
