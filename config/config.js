@@ -2,12 +2,16 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from 'url';
 
+// for prod
+dotenv.config({ path: '/etc/secrets/.env' });
+if (!process.env.STRIPE_SECRET_KEY) dotenv.config();
+
 // Get the directory of the current module
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
 // Load .env from the project root (one level up from config/)
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 export default {
     JWTKey: process.env.REACT_JWT_KEY,

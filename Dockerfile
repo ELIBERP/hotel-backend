@@ -11,9 +11,12 @@ RUN npm ci --only=production
 
 # Copy app source code
 COPY . .
+ENV NODE_ENV=production PORT=10000
 
-# Create .env file if needed (can be overridden by volume)
-RUN touch .env
+# Do NOT copy .env; Render mounts it at /etc/secrets/.env
+# Start the server
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- "http://127.0.0.1:${PORT}/health" >/dev/null || exit 1
 
 # Expose API port
 EXPOSE 3000
