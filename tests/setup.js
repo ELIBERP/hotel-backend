@@ -3,7 +3,7 @@ import { jest } from '@jest/globals';
 
 // Mock environment variables
 process.env.NODE_ENV = 'test';
-process.env.REACT_JWT_KEY = 'test_jwt_secret_key'; // Changed from JWT_SECRET to REACT_JWT_KEY
+process.env.REACT_JWT_KEY = 'super-secret-jwt-key-for-hotel-booking-app-2025'; // Match auth.middleware.test.js
 process.env.DB_HOST = 'localhost';
 process.env.DB_USER = 'test_user';
 process.env.DB_PASSWORD = 'test_password';

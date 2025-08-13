@@ -1,9 +1,6 @@
 name: Test Cases
 
 on: 
-  push:
-    branches:
-      - 'main'
   pull_request:
     branches:
       - 'main'
@@ -14,7 +11,7 @@ jobs:
 
     env:
       NODE_ENV: test
-      REACT_JWT_KEY: test_jwt_secret_key
+      REACT_JWT_KEY: super-secret-jwt-key-for-hotel-booking-app-2025
       DB_HOST: localhost
       DB_USER: test_user
       DB_PASSWORD: test_password
@@ -36,5 +33,5 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
 
-      - name: Run integration tests
-        run: npm run test:integration
+      - name: Run all tests with coverage
+        run: npm test
