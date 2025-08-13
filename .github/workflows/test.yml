@@ -12,6 +12,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      REACT_JWT_KEY: test_jwt_secret_key
+
     steps:
       - name: Checkout 
         uses: actions/checkout@v4

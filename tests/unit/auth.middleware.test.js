@@ -1,7 +1,7 @@
 import { jest, describe, test, beforeEach, expect } from '@jest/globals';
 import jwt from 'jsonwebtoken';
 
-// Set up environment variable before importing modules
+// Set up environment variable before importing modules to match config.js expectation
 process.env.REACT_JWT_KEY = 'super-secret-jwt-key-for-hotel-booking-app-2025';
 
 import { verifyToken as verifyTokenMiddleware, verifyAdmin, checkToken, validatePassword } from '../../middleware/auth.js';
