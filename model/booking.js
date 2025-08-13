@@ -8,6 +8,9 @@ class BookingModel {
             const id = uuidv4();
             console.log('BookingModel: Creating booking with ID:', id);
             
+            // Helper function to convert undefined to null
+            const sanitize = (value) => value === undefined ? null : value;
+            
             const query = `
                 INSERT INTO bookings (
                     id, destination_id, hotel_id, start_date, end_date, nights, adults, children, 
@@ -19,26 +22,26 @@ class BookingModel {
             
             const [result] = await pool.execute(query, [
                 id,
-                data.destination_id || null,
-                data.hotel_id,
-                data.start_date,
-                data.end_date,
-                data.nights,
-                data.adults || 1,
-                data.children || 0,
-                data.special_requests || data.specialRequests || null,
+                sanitize(data.destination_id),
+                sanitize(data.hotel_id),
+                sanitize(data.start_date),
+                sanitize(data.end_date),
+                sanitize(data.nights),
+                sanitize(data.adults) || 1,
+                sanitize(data.children) || 0,
+                sanitize(data.special_requests || data.specialRequests),
                 JSON.stringify(data.room_types || []),
-                data.total_price,
-                data.currency || 'SGD',
-                data.salutation || null,
-                data.first_name,
-                data.last_name,
-                data.phone || null,
-                data.email,
-                data.payment_reference || null,
-                data.masked_card_number || null,
+                sanitize(data.total_price),
+                sanitize(data.currency) || 'SGD',
+                sanitize(data.salutation),
+                sanitize(data.first_name),
+                sanitize(data.last_name),
+                sanitize(data.phone),
+                sanitize(data.email),
+                sanitize(data.payment_reference),
+                sanitize(data.masked_card_number),
                 JSON.stringify(data.billing_address || {}),
-                data.booking_status || 'confirmed'  // Default to confirmed instead of pending
+                sanitize(data.booking_status) || 'confirmed'  // Default to confirmed instead of pending
             ]);
             
             console.log('BookingModel: Booking created successfully with status:', data.booking_status || 'confirmed');
