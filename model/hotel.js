@@ -68,7 +68,21 @@ hotel.findRoomsByID = async (hotelId, query) => {
         // Add a short delay to avoid hammering the API
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    return data;
+
+    const roomMap = new Map(); // key = roomDescription, value = room object
+    for (const room of data.rooms) {
+        const existing = roomMap.get(room.roomDescription);
+        if (!existing || room.price < existing.price) {
+            roomMap.set(room.roomDescription, room);
+        }
+    }
+
+    const filteredData = {
+        ...data,
+        rooms: Array.from(roomMap.values()),
+    };
+
+    return filteredData;
 };
 
 
