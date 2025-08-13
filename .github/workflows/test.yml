@@ -13,7 +13,13 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      NODE_ENV: test
       REACT_JWT_KEY: test_jwt_secret_key
+      DB_HOST: localhost
+      DB_USER: test_user
+      DB_PASSWORD: test_password
+      DB_NAME: test_hotel_booking_db
+      STRIPE_SECRET_KEY: sk_test_mock_stripe_key
 
     steps:
       - name: Checkout 
