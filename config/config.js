@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 // for prod
 dotenv.config({ path: '/etc/secrets/.env' });
 if (!process.env.STRIPE_SECRET_KEY) dotenv.config();
-
+console.log(process.env);
 // Get the directory of the current module
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
