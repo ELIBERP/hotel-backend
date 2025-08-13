@@ -44,7 +44,7 @@ router.get('/prices', cacheMiddleware(300), async (req, res) => {
     var data = await hotel.findByPrice(query);
     while (data.completed === false) {
         // Wait for the data to complete
-        await delay(1000); // Poll every second
+        await delay(500); // Poll every second
         data = await hotel.findByPrice(query);
     }
     res.status(200).send(data);
