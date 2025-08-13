@@ -1,4 +1,4 @@
-import './config.js';   
+import './config/config.js';   
 import express from 'express';       
 import jwt from "jsonwebtoken";
 import cors from "cors";
@@ -19,6 +19,8 @@ import paymentRoutes from './routes/payment.js';
 import testPaymentRoutes from './routes/test-payment.js';
 
 // this file runs in sequential order, so import the errors module should always be at the bottom
+import { testConnection } from './config/database.js';
+console.log(testConnection());
 
 const app = express();
 const PORT = process.env.PORT || 3000;
