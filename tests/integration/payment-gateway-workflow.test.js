@@ -769,17 +769,27 @@ describe('Payment Gateway Workflow Integration Tests', () => {
 
     const validateSpecialValue = (value, field) => {
       if (field === 'total_price') {
-        if (value === null || value === undefined || Number.isNaN(value) || !Number.isFinite(value)) {
+        // Handle null/undefined first
+        if (value === null || value === undefined) {
           return 'rejected';
         }
+        
+        // Handle string conversion
         if (typeof value === 'string') {
           const parsed = parseFloat(value);
           return isNaN(parsed) || parsed <= 0 ? 'rejected' : 'accepted_with_conversion';
         }
-        if (typeof value === 'object' || typeof value === 'boolean') {
-          return 'rejected';
+        
+        // Handle numbers
+        if (typeof value === 'number') {
+          if (Number.isNaN(value) || !Number.isFinite(value) || value <= 0) {
+            return 'rejected';
+          }
+          return 'accepted';
         }
-        return typeof value === 'number' && value > 0 ? 'accepted' : 'rejected';
+        
+        // Reject objects, arrays, booleans, etc.
+        return 'rejected';
       }
       
       if (field === 'currency') {
@@ -789,8 +799,9 @@ describe('Payment Gateway Workflow Integration Tests', () => {
         if (value === undefined) return 'default_to_sgd';
         if (typeof value === 'string') {
           const validCurrencies = ['usd', 'sgd', 'eur', 'gbp', 'jpy', 'cad'];
-          if (validCurrencies.includes(value.toLowerCase())) {
-            return value === value.toLowerCase() ? 'accepted' : 'accepted_normalized';
+          const lowerValue = value.toLowerCase();
+          if (validCurrencies.includes(lowerValue)) {
+            return value === lowerValue ? 'accepted' : 'accepted_normalized';
           }
         }
         return 'rejected';
@@ -809,6 +820,9 @@ describe('Payment Gateway Workflow Integration Tests', () => {
 
     specialValueTests.forEach(test => {
       const result = validateSpecialValue(test.value, test.field);
+      if (result !== test.expected) {
+        console.log(`❌ FAILED: ${test.type}: ${test.field} = ${JSON.stringify(test.value)} → Expected: ${test.expected}, Got: ${result}`);
+      }
       expect(result).toBe(test.expected);
       console.log(`✅ ${test.type}: ${test.field} = ${JSON.stringify(test.value)} → ${result}`);
     });

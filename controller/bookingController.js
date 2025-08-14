@@ -351,9 +351,9 @@ webhookRouter.post('/webhook', express.raw({ type: 'application/json' }), async 
                 const bookingResult = await connection.execute(`
                     INSERT INTO bookings (
                         id, hotel_id, start_date, end_date, nights, adults, children,
-                        room_types, total_price, currency, first_name, last_name, phone, email,
+                        message_to_hotel, room_types, total_price, currency, first_name, last_name, phone, email,
                         payment_reference, booking_status, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', NOW(), NOW())
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', NOW(), NOW())
                 `, [
                     newBookingId,
                     bookingData.hotel_id,
@@ -362,6 +362,7 @@ webhookRouter.post('/webhook', express.raw({ type: 'application/json' }), async 
                     bookingData.nights,
                     bookingData.adults || 1,
                     bookingData.children || 0,
+                    bookingData.special_requests || null,
                     JSON.stringify([bookingData.room_type]),
                     bookingData.total_price,
                     bookingData.currency,

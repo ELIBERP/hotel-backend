@@ -16,13 +16,21 @@ class UserModel {
             // Generate unique ID
             const userId = uuidv4();
             
+            // Helper function to convert undefined to null
+            const sanitize = (value) => value === undefined ? null : value;
+            
             const query = `
                 INSERT INTO users (id, email, password_hash, first_name, last_name, phone, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
             `;
             
             const [result] = await pool.execute(query, [
-                userId, email, passwordHash, firstName, lastName, phone
+                userId, 
+                sanitize(email), 
+                sanitize(passwordHash), 
+                sanitize(firstName), 
+                sanitize(lastName), 
+                sanitize(phone)
             ]);
             
             console.log('UserModel: User created with ID:', userId);
@@ -139,9 +147,8 @@ class UserModel {
             const query = `
                 UPDATE users 
                 SET email = CONCAT('DELETED_', id, '_', email), 
-                    deleted_at = NOW(),
                     updated_at = NOW()
-                WHERE id = ? AND deleted_at IS NULL
+                WHERE id = ?
             `;
             
             const [result] = await pool.execute(query, [id]);

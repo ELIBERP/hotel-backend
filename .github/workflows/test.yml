@@ -1,9 +1,6 @@
 name: Test Cases
 
 on: 
-  push:
-    branches:
-      - 'main'
   pull_request:
     branches:
       - 'main'
@@ -11,6 +8,15 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: test
+      REACT_JWT_KEY: super-secret-jwt-key-for-hotel-booking-app-2025
+      DB_HOST: localhost
+      DB_USER: test_user
+      DB_PASSWORD: test_password
+      DB_NAME: test_hotel_booking_db
+      STRIPE_SECRET_KEY: sk_test_mock_stripe_key
 
     steps:
       - name: Checkout 
@@ -27,5 +33,5 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
 
-      - name: Run integration tests
-        run: npm run test:integration
+      - name: Run all tests with coverage
+        run: npm test
