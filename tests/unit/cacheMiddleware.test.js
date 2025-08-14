@@ -3,18 +3,26 @@ import request from 'supertest';
 import express from 'express';
 import { cacheMiddleware, clearAllCache, cache, atomicCacheMiddleware } from '../../middleware/cache.js';
 
+// Helper function to create a timer that doesn't prevent process exit
+const wait = ms => new Promise(resolve => {
+  const t = setTimeout(resolve, ms);
+  if (t.unref) t.unref();
+});
+
 // Testing cache middleware
 
 // Unit tests
-// 1. Cache HIT scenarios - Testing when cache returns stored data
-// 2. Cache MISS scenarios - Testing when cache doesn't have data
-// 3. TTL (Time To Live) - Testing cache expiration
-// 4. Cache key generation - Testing how URLs become cache keys
-// 5. Error handling - Testing middleware behavior with errors
-// 6. Cache statistics - Testing cache metrics
+// 1. Cache HIT scenarios - Ensures cached data is returned for repeated requests
+// 2. Cache MISS scenarios - Ensures data is processed and cached when not present
+// 3. TTL (Time To Live) - Verifies cache expiration and correct handling of TTL
+// 4. Cache key generation - Ensures unique cache keys for different URLs and query parameters
+// 5. Error handling - Verifies that error responses are not cached and middleware errors are handled gracefully
+// 6. Cache statistics - Checks cache metrics such as hit count and key count
 
-// integration tests for cache middleware
-// 1. Integration patterns - Testing with actual hotel route patterns
+// Integration tests for cache middleware
+// 1. Integration patterns - Tests caching behavior with actual hotel route patterns
+// 2. Polling and concurrency - Compares non-atomic and atomic caching for polling endpoints and concurrent requests
+// 3. Cache clearing - Ensures correct behavior when cache is cleared during request processing
 describe('Cache Middleware Unit Tests', () => {
   let app;
 
@@ -31,6 +39,11 @@ describe('Cache Middleware Unit Tests', () => {
   afterEach(() => {
     // Clean up after each test
     clearAllCache();
+  });
+
+  afterAll(() => {
+    // Close NodeCache timers to prevent test leaks
+    cache.close();
   });
 
   describe('Cache HIT scenarios', () => {
@@ -143,7 +156,7 @@ describe('Cache Middleware Unit Tests', () => {
       expect(cache.keys()).toHaveLength(1);
 
       // Wait for cache to expire
-      await new Promise(resolve => setTimeout(resolve, 1100));
+      await wait(1100);
 
       // Cache should be expired (NodeCache auto-cleanup might take time)
       // Make another request to verify it's treated as cache miss
@@ -303,7 +316,7 @@ describe('Cache Middleware Unit Tests', () => {
       for (let i = 0; i < 3; i++) {
         pollResponses.push(await request(app).get('/polling?poll=true'));
         // Wait a bit between polls
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await wait(10);
       }
 
       // With standard caching, subsequent polls would be cached,
@@ -336,7 +349,7 @@ describe('Cache Middleware Unit Tests', () => {
       for (let i = 0; i < 3; i++) {
         pollResponses.push(await request(app).get('/polling-bypass?poll=true'));
         // Wait a bit between polls
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await wait(10);
       }
 
       // Each poll should get fresh data since cache was bypassed
@@ -362,14 +375,14 @@ describe('Cache Middleware Unit Tests', () => {
       expect(firstResponse.body.count).toBe(1);
       
       // Wait for cache to expire
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await wait(150);
       
       // Second poll after cache expiry
       const secondResponse = await request(app).get('/polling-atomic?poll=true');
       expect(secondResponse.body.count).toBe(2);
       
       // Wait for cache to expire again
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await wait(150);
       
       // Third poll after cache expiry
       const thirdResponse = await request(app).get('/polling-atomic?poll=true');
@@ -525,12 +538,128 @@ describe('Cache Middleware Unit Tests', () => {
       // Start a request; midway through, clear the cache.
       const reqPromise = request(app).get('/clear-cache');
       // Wait until processing has started
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await wait(50);
       // Clear cache while request is in flight
       clearAllCache();
       const response = await reqPromise;
       expect(response.status).toBe(200);
       expect(response.body.data).toBe('final response');
     });
+  });
+});
+
+describe('Cache Coverage Extra Tests', () => {
+  let app;
+
+  beforeEach(() => {
+    clearAllCache();
+    jest.clearAllMocks();
+    app = express();
+    app.use(express.json());
+  });
+
+  afterEach(() => {
+    clearAllCache();
+  });
+
+  test('should bypass caching when req.skipCache is true using cacheMiddleware', async () => {
+    app.get('/skip', cacheMiddleware(60), (req, res) => {
+      req.skipCache = true;
+      res.json({ message: 'no cache' });
+    });
+
+    const res = await request(app).get('/skip');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: 'no cache' });
+    expect(cache.keys().length).toBe(0);
+  });
+
+  test('atomicCacheMiddleware should handle concurrent requests with pending promise', async () => {
+    let callCount = 0;
+    app.get('/atomic', atomicCacheMiddleware(60, 500), async (req, res) => {
+      callCount++;
+      await wait(100);
+      res.json({ count: callCount });
+    });
+
+    const [res1, res2] = await Promise.all([
+      request(app).get('/atomic'),
+      request(app).get('/atomic')
+    ]);
+    expect(res1.body).toEqual(res2.body);
+    expect(res1.body.count).toBe(1);
+  });
+
+  test('atomicCacheMiddleware should trigger error branch on response error', async () => {
+    app.get('/atomic-error', atomicCacheMiddleware(60, 200), (req, res) => {
+      res.status(500);
+      res.end('Internal Server Error');
+    });
+    const response = await request(app).get('/atomic-error');
+    expect(response.status).toBe(500);
+    expect(response.text).toMatch(/Internal Server Error/);
+  });
+
+  test('clearCache should remove keys matching pattern and pending promises', () => {
+    cache.set('testKey1', { data: 'value1' }, 100);
+    cache.set('anotherKey', { data: 'value2' }, 100);
+    
+    expect(cache.get('testKey1')).toEqual({ data: 'value1' });
+    expect(cache.get('anotherKey')).toEqual({ data: 'value2' });
+    
+    clearCache('testKey');
+    
+    expect(cache.get('testKey1')).toBeUndefined();
+    expect(cache.get('anotherKey')).toEqual({ data: 'value2' });
+  });
+
+  test('clearAllCache should remove all cache entries and pending promises', () => {
+    cache.set('key1', { data: 1 }, 100);
+    cache.set('key2', { data: 2 }, 100);
+    
+    expect(cache.keys().length).toBeGreaterThan(0);
+    
+    clearAllCache();
+    
+    expect(cache.keys().length).toBe(0);
+  });
+
+  test('atomicCacheMiddleware should handle pending promise timeout and proceed with new request', async () => {
+    let callCount = 0;
+    app.get('/atomic-timeout', atomicCacheMiddleware(60, 50), async (req, res) => {
+      callCount++;
+      // Delay long enough to trigger the safety timeout (50 * 2 = 100ms)
+      await wait(120);
+      res.json({ count: callCount });
+    });
+    
+    // Start first request
+    const res1Promise = request(app).get('/atomic-timeout');
+    // Start a second request shortly after the first begins
+    await wait(10);
+    let error;
+    try {
+      await request(app).get('/atomic-timeout');
+    } catch (err) {
+      error = err;
+    }
+    expect(error).toBeDefined();
+    expect(error.message).toMatch(/Request processing timeout after 100ms for \/atomic-timeout/);
+    
+    // Issue a new request which should now process normally
+    const res2 = await request(app).get('/atomic-timeout');
+    expect(res2.body.count).toBe(2);
+  });
+
+  test('atomicCacheMiddleware should bypass caching when req.skipCache is true', async () => {
+    app.get('/atomic-skip', atomicCacheMiddleware(60), (req, res) => {
+      req.skipCache = true;
+      res.json({ message: 'atomic bypass' });
+    });
+    
+    const res = await request(app).get('/atomic-skip');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: 'atomic bypass' });
+    expect(cache.keys().length).toBe(0);
   });
 });
