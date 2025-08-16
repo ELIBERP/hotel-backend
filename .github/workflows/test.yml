@@ -9,15 +9,29 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: test_hotel_booking_db
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
     env:
       NODE_ENV: test
       REACT_JWT_KEY: super-secret-jwt-key-for-hotel-booking-app-2025
       REACT_JWT_EXPIRY: 24h
       DB_HOST: localhost
       DB_USER: test_user
-      DB_PASSWORD: test_password
+      DB_PASS: test_password
       DB_NAME: test_hotel_booking_db
       STRIPE_SECRET_KEY: sk_test_mock_stripe_key
+      CLIENT_URL: http://localhost:5173
+      FRONTEND_URL: http://localhost:5173
 
     steps:
       - name: Checkout 
@@ -30,6 +44,16 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Wait for MySQL to be ready
+        run: |
+          while ! mysqladmin ping -h"localhost" -P"3306" -u"test_user" -p"test_password" --silent; do
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
+
+      - name: Initialize database
+        run: npm run db:init
 
       - name: Run unit tests
         run: npm run test:unit
