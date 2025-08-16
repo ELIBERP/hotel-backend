@@ -19,7 +19,15 @@ jobs:
           MYSQL_PASSWORD: test_password
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+          --health-start-period=20s
+          --innodb-buffer-pool-size=64M
+          --skip-log-bin
+          --skip-innodb-doublewrite
 
     env:
       NODE_ENV: test
@@ -47,16 +55,28 @@ jobs:
 
       - name: Wait for MySQL to be ready
         run: |
-          while ! mysqladmin ping -h"localhost" -P"3306" -u"test_user" -p"test_password" --silent; do
-            echo "Waiting for MySQL..."
+          timeout=60
+          while [ $timeout -gt 0 ] && ! mysqladmin ping -h"localhost" -P"3306" -u"test_user" -p"test_password" --silent; do
+            echo "Waiting for MySQL... ($timeout seconds left)"
             sleep 2
+            timeout=$((timeout-2))
           done
+          if [ $timeout -le 0 ]; then
+            echo "MySQL failed to start within 60 seconds"
+            exit 1
+          fi
+          echo "MySQL is ready!"
 
       - name: Initialize database
-        run: npm run db:init
+        run: |
+          echo "Creating database schema (CI optimized)..."
+          npm run db:init:ci
+        timeout-minutes: 2
 
       - name: Run unit tests
         run: npm run test:unit
+        timeout-minutes: 5
 
       - name: Run all tests with coverage
         run: npm test
+        timeout-minutes: 10

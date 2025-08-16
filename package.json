@@ -12,6 +12,7 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "db:init": "node scripts/initDb.js",
+    "db:init:ci": "node scripts/initDb-ci.js",
     "db:reset": "node scripts/initDb.js --reset",
     "db:test": "node testDb.js",
     "db:seed": "node scripts/seed.js",
