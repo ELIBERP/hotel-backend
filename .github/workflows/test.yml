@@ -12,6 +12,7 @@ jobs:
     env:
       NODE_ENV: test
       REACT_JWT_KEY: super-secret-jwt-key-for-hotel-booking-app-2025
+      REACT_JWT_EXPIRY: 24h
       DB_HOST: localhost
       DB_USER: test_user
       DB_PASSWORD: test_password
