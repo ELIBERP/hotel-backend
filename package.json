@@ -18,7 +18,12 @@
     "db:reset": "node scripts/initDb.js --reset",
     "db:test": "node testDb.js",
     "db:seed": "node scripts/seed.js",
-    "db:seed:sql": "mysql -u %REACT_DB_USERNAME% -p%REACT_DB_PW% -h %REACT_DB_HOST% %REACT_DB_NAME% < db/seed.sql"
+    "db:seed:sql": "mysql -u %REACT_DB_USERNAME% -p%REACT_DB_PW% -h %REACT_DB_HOST% %REACT_DB_NAME% < db/seed.sql",
+    "fuzz:auth": "node fuzzers/auth-controller-fuzzer.js",
+    "fuzz:auth:60": "node fuzzers/auth-controller-fuzzer.js 60",
+    "fuzz:auth:property": "node fuzzers/auth-property-tester.js",
+    "fuzz:auth:coverage": "node fuzzers/auth-coverage-fuzzer.js 30",
+    "fuzz:auth:targeted": "node fuzzers/auth-coverage-fuzzer.js"
   },
   "keywords": [],
   "author": "",
@@ -37,7 +42,9 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "fast-check": "^3.23.2",
     "jest": "^30.0.4",
+    "node-fetch": "^3.3.2",
     "nodemon": "^3.1.10"
   }
 }
