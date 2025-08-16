@@ -9,34 +9,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root_password
-          MYSQL_DATABASE: test_hotel_booking_db
-          MYSQL_USER: test_user
-          MYSQL_PASSWORD: test_password
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=5s
-          --health-timeout=3s
-          --health-retries=10
-          --health-start-period=20s
-          --innodb-buffer-pool-size=64M
-          --skip-log-bin
-          --skip-innodb-doublewrite
-
     env:
       NODE_ENV: test
       REACT_JWT_KEY: super-secret-jwt-key-for-hotel-booking-app-2025
       REACT_JWT_EXPIRY: 24h
-      DB_HOST: localhost
-      DB_USER: test_user
-      DB_PASS: test_password
-      DB_NAME: test_hotel_booking_db
       STRIPE_SECRET_KEY: sk_test_mock_stripe_key
       CLIENT_URL: http://localhost:5173
       FRONTEND_URL: http://localhost:5173
@@ -53,30 +29,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Wait for MySQL to be ready
-        run: |
-          timeout=60
-          while [ $timeout -gt 0 ] && ! mysqladmin ping -h"localhost" -P"3306" -u"test_user" -p"test_password" --silent; do
-            echo "Waiting for MySQL... ($timeout seconds left)"
-            sleep 2
-            timeout=$((timeout-2))
-          done
-          if [ $timeout -le 0 ]; then
-            echo "MySQL failed to start within 60 seconds"
-            exit 1
-          fi
-          echo "MySQL is ready!"
-
-      - name: Initialize database
-        run: |
-          echo "Creating database schema (CI optimized)..."
-          npm run db:init:ci
-        timeout-minutes: 2
-
       - name: Run unit tests
         run: npm run test:unit
-        timeout-minutes: 5
 
       - name: Run all tests with coverage
         run: npm test
-        timeout-minutes: 10
