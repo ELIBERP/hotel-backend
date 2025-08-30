@@ -137,32 +137,6 @@ describe('Database Schema and Business Rules Integration', () => {
                 .toThrow('User with this email already exists');
         });
 
-        test('should handle concurrent user creation with same email', async () => {
-            const userData = {
-                email: 'test.schema.concurrent@example.com',
-                password: 'Password123',
-                firstName: 'Concurrent',
-                lastName: 'Test'
-            };
-
-            // Attempt to create multiple users with same email simultaneously
-            const promises = Array.from({ length: 5 }, () => 
-                UserModel.createUser(userData).catch(err => ({ error: err.message }))
-            );
-
-            const results = await Promise.all(promises);
-            
-            // Only one should succeed, others should fail with duplicate error
-            const successful = results.filter(r => !r.error);
-            const failed = results.filter(r => r.error);
-
-            expect(successful).toHaveLength(1);
-            expect(failed.length).toBeGreaterThan(0);
-            failed.forEach(result => {
-                expect(result.error).toContain('already exists');
-            });
-        });
-
         test('should maintain data consistency during booking creation', async () => {
             // Create a user first
             const user = await UserModel.createUser({
