@@ -1,0 +1,52 @@
+[
+  {
+    "id": "hotel-1",
+    "destination_id": "SG",
+    "name": "Grand Singapore Hotel",
+    "price": {
+      "amount": 250,
+      "currency": "SGD"
+    },
+    "rating": 4.5
+  },
+  {
+    "id": "hotel-2",
+    "destination_id": "SG",
+    "name": "Marina Bay Resort",
+    "price": {
+      "amount": 450,
+      "currency": "SGD"
+    },
+    "rating": 4.8
+  },
+  {
+    "id": "hotel-3",
+    "destination_id": "BKK",
+    "name": "Bangkok Central Hotel",
+    "price": {
+      "amount": 150,
+      "currency": "THB"
+    },
+    "rating": 4.2
+  },
+  {
+    "id": "hotel-4",
+    "destination_id": "BKK",
+    "name": "Riverside Boutique",
+    "price": {
+      "amount": 200,
+      "currency": "THB"
+    },
+    "rating": 4.4
+  },
+  {
+    "id": "hotel-5",
+    "destination_id": "NYC",
+    "name": "Manhattan Skyline Hotel",
+    "price": {
+      "amount": 350,
+      "currency": "USD"
+    },
+    "rating": 4.5
+  }
+]
