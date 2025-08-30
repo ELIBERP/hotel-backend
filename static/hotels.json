@@ -1,0 +1,142 @@
+[
+  {
+    "id": "hotel-1",
+    "destination_id": "SG",
+    "name": "Grand Singapore Hotel",
+    "location": {
+      "address": "123 Orchard Road",
+      "city": "Singapore",
+      "country": "Singapore"
+    },
+    "description": "Luxury hotel in the heart of Singapore",
+    "amenities": [
+      "Swimming Pool",
+      "Free WiFi",
+      "Spa",
+      "Fitness Center"
+    ],
+    "images": [
+      {
+        "url": "https://example.com/image1.jpg",
+        "caption": "Hotel Exterior"
+      }
+    ],
+    "price": {
+      "amount": 250,
+      "currency": "SGD"
+    },
+    "rating": 4.5
+  },
+  {
+    "id": "hotel-2",
+    "destination_id": "SG",
+    "name": "Marina Bay Resort",
+    "location": {
+      "address": "10 Bayfront Avenue",
+      "city": "Singapore",
+      "country": "Singapore"
+    },
+    "description": "Iconic resort with stunning views",
+    "amenities": [
+      "Infinity Pool",
+      "Free WiFi",
+      "Multiple Restaurants",
+      "Casino"
+    ],
+    "images": [
+      {
+        "url": "https://example.com/image2.jpg",
+        "caption": "Pool View"
+      }
+    ],
+    "price": {
+      "amount": 450,
+      "currency": "SGD"
+    },
+    "rating": 4.8
+  },
+  {
+    "id": "hotel-3",
+    "destination_id": "BKK",
+    "name": "Bangkok Central Hotel",
+    "location": {
+      "address": "789 Sukhumvit Road",
+      "city": "Bangkok",
+      "country": "Thailand"
+    },
+    "description": "Modern hotel in downtown Bangkok",
+    "amenities": [
+      "Swimming Pool",
+      "Free WiFi",
+      "Restaurant",
+      "Bar"
+    ],
+    "images": [
+      {
+        "url": "https://example.com/image3.jpg",
+        "caption": "Hotel Entrance"
+      }
+    ],
+    "price": {
+      "amount": 150,
+      "currency": "THB"
+    },
+    "rating": 4.2
+  },
+  {
+    "id": "hotel-4",
+    "destination_id": "BKK",
+    "name": "Riverside Boutique",
+    "location": {
+      "address": "45 Chao Phraya Road",
+      "city": "Bangkok",
+      "country": "Thailand"
+    },
+    "description": "Charming boutique hotel by the river",
+    "amenities": [
+      "River View",
+      "Free WiFi",
+      "Restaurant",
+      "Shuttle Service"
+    ],
+    "images": [
+      {
+        "url": "https://example.com/image4.jpg",
+        "caption": "River View"
+      }
+    ],
+    "price": {
+      "amount": 200,
+      "currency": "THB"
+    },
+    "rating": 4.4
+  },
+  {
+    "id": "hotel-5",
+    "destination_id": "NYC",
+    "name": "Manhattan Skyline Hotel",
+    "location": {
+      "address": "42 Broadway",
+      "city": "New York",
+      "country": "USA"
+    },
+    "description": "Modern luxury in the heart of Manhattan",
+    "amenities": [
+      "City Views",
+      "Free WiFi",
+      "Restaurant",
+      "Fitness Center"
+    ],
+    "images": [
+      {
+        "url": "https://example.com/image5.jpg",
+        "caption": "City View"
+      }
+    ],
+    "price": {
+      "amount": 350,
+      "currency": "USD"
+    },
+    "rating": 4.5
+  }
+]

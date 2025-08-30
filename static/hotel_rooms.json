@@ -1,0 +1,122 @@
+[
+  {
+    "hotelId": "hotel-1",
+    "completed": true,
+    "rooms": [
+      {
+        "id": "room-1",
+        "roomDescription": "Deluxe King",
+        "price": 250,
+        "currency": "SGD",
+        "images": ["https://example.com/room1.jpg"],
+        "amenities": ["Free WiFi", "City View", "Coffee Maker"],
+        "available": true
+      },
+      {
+        "id": "room-2",
+        "roomDescription": "Executive Suite",
+        "price": 350,
+        "currency": "SGD",
+        "images": ["https://example.com/room2.jpg"],
+        "amenities": ["Free WiFi", "City View", "Mini Bar", "Living Area"],
+        "available": true
+      }
+    ]
+  },
+  {
+    "hotelId": "hotel-2",
+    "completed": true,
+    "rooms": [
+      {
+        "id": "room-3",
+        "roomDescription": "Garden View Room",
+        "price": 450,
+        "currency": "SGD",
+        "images": ["https://example.com/room3.jpg"],
+        "amenities": ["Free WiFi", "Garden View", "Coffee Maker"],
+        "available": true
+      },
+      {
+        "id": "room-4",
+        "roomDescription": "Marina Suite",
+        "price": 650,
+        "currency": "SGD",
+        "images": ["https://example.com/room4.jpg"],
+        "amenities": ["Free WiFi", "Bay View", "Mini Bar", "Living Area"],
+        "available": true
+      }
+    ]
+  },
+  {
+    "hotelId": "hotel-3",
+    "completed": true,
+    "rooms": [
+      {
+        "id": "room-5",
+        "roomDescription": "Standard Room",
+        "price": 150,
+        "currency": "THB",
+        "images": ["https://example.com/room5.jpg"],
+        "amenities": ["Free WiFi", "City View"],
+        "available": true
+      },
+      {
+        "id": "room-6",
+        "roomDescription": "Deluxe Room",
+        "price": 200,
+        "currency": "THB",
+        "images": ["https://example.com/room6.jpg"],
+        "amenities": ["Free WiFi", "City View", "Mini Bar"],
+        "available": true
+      }
+    ]
+  },
+  {
+    "hotelId": "hotel-4",
+    "completed": true,
+    "rooms": [
+      {
+        "id": "room-7",
+        "roomDescription": "River View Room",
+        "price": 200,
+        "currency": "THB",
+        "images": ["https://example.com/room7.jpg"],
+        "amenities": ["Free WiFi", "River View", "Coffee Maker"],
+        "available": true
+      },
+      {
+        "id": "room-8",
+        "roomDescription": "Boutique Suite",
+        "price": 300,
+        "currency": "THB",
+        "images": ["https://example.com/room8.jpg"],
+        "amenities": ["Free WiFi", "River View", "Mini Bar", "Living Area"],
+        "available": true
+      }
+    ]
+  },
+  {
+    "hotelId": "hotel-5",
+    "completed": true,
+    "rooms": [
+      {
+        "id": "room-9",
+        "roomDescription": "Manhattan King",
+        "price": 350,
+        "currency": "USD",
+        "images": ["https://example.com/room9.jpg"],
+        "amenities": ["Free WiFi", "City View", "Coffee Maker"],
+        "available": true
+      },
+      {
+        "id": "room-10",
+        "roomDescription": "Skyline Suite",
+        "price": 550,
+        "currency": "USD",
+        "images": ["https://example.com/room10.jpg"],
+        "amenities": ["Free WiFi", "Skyline View", "Mini Bar", "Living Area"],
+        "available": true
+      }
+    ]
+  }
+]
