@@ -1,101 +1,228 @@
-# ESC Hotel Backend
+# 🏨 Hotel Booking API
 
-This is the backend API for the ESC Hotel project, built with Node.js and Express. It provides endpoints for hotel data and authentication, and is designed to work with a frontend (e.g., React) running on a different port (default: 5173).
+![Node.js](https://img.shields.io/badge/Node.js-18.x-green)
+![Express](https://img.shields.io/badge/Express-5.x-blue)
+![MySQL](https://img.shields.io/badge/MySQL-8.x-orange)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
-## Setup Instructions
+A full-featured hotel booking backend API built with Node.js and Express. This service provides endpoints for hotel search, room booking, user authentication, and payment processing.
 
-### 1. Clone the Repository
-```sh
-git clone https://github.com/ELIBERP/hotel-backend.git
-cd esc-hotel/hotel-backend
+## ✨ Features
+
+- **Hotel Search** - Search hotels by destination, dates, and guest count
+- **Room Booking** - Book rooms with detailed information
+- **User Authentication** - Secure JWT-based authentication
+- **Payment Processing** - Integration with Stripe payment gateway
+- **Destination Autocomplete** - Fast destination search with autocomplete
+- **Caching** - Response caching for improved performance
+- **Comprehensive Testing** - Unit and integration tests
+- **Docker Support** - Easy containerization
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18.x or higher
+- MySQL 8.x (for booking persistence)
+- npm or yarn
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/ELIBERP/hotel-backend.git
+   cd hotel-backend
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+4. **Initialize the database**
+   ```bash
+   npm run db:init
+   ```
+
+5. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+The server will be running at `http://localhost:3000`.
+
+## 🔧 Configuration
+
+Create a `.env` file in the project root with the following variables:
+
 ```
+# API Configuration
+PORT=3000
+NODE_ENV=development
 
-### 2. Install Dependencies
-```sh
-npm install
-```
-
-### 3. Database Setup
-This application requires MySQL for data persistence. 
-
-**Quick Setup:**
-```sh
-# Copy environment template
-cp .env.example .env
-
-# Edit .env with your database credentials
-# Then initialize the database
-npm run db:test    # Test connection
-npm run db:init    # Create tables
-```
-
-For detailed database setup instructions, see [DATABASE_SETUP.md](./DATABASE_SETUP.md).
-
-### 4. Create a `.env` File
-Create a `.env` file in the root of the `hotel-backend` directory with the following content:
-
-```
-# Hotel API
-HOTELAPI=INSERT_GIVEN_URL
+# Frontend URLs
 FRONTEND_URL=http://localhost:5173
 PRODUCTION_URL=https://your-production-frontend-url.com
 
-# Database (required for booking system)
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=hotel_app_user
-DB_PASSWORD=your_secure_password
-DB_NAME=hotel_booking_db
+# Hotel API (can be replaced with static data)
+HOTELAPI=https://hotelapi.loyalty.dev
+
+# Database Configuration
+REACT_DB_HOST=localhost
+REACT_DB_USERNAME=root
+REACT_DB_PW=your_password
+REACT_DB_NAME=hotel_booking
 
 # JWT Authentication
-JWT_SECRET=your_jwt_secret_key_here
-JWT_EXPIRE=24h
-```
-- `HOTELAPI`: The base URL for the hotel API (default provided).
-- `FRONTEND_URL`: The URL of your frontend development server (default: localhost:5173).
-- `PRODUCTION_URL`: The URL of your deployed frontend (if any).
-- `DB_*`: Database connection credentials (see DATABASE_SETUP.md for details).
-- `JWT_*`: JSON Web Token configuration for authentication.
+REACT_JWT_KEY=your_jwt_secret_key_here
+REACT_JWT_EXPIRY=24h
 
-### 5. Run the Server
-```sh
-# Development mode with auto-restart
+# Stripe Integration (Optional)
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=your_webhook_secret
+```
+
+## 🐳 Docker Support
+
+This project includes Docker support for easy containerization:
+
+```bash
+# Build the Docker image
+docker build -t hotel-booking-api .
+
+# Run the container
+docker run -p 3000:3000 -e HOTELAPI=https://hotelapi.loyalty.dev hotel-booking-api
+```
+
+## 📚 API Documentation
+
+### Hotel Endpoints
+
+- `GET /hotels` - Search hotels by destination
+- `GET /hotels/prices` - Search hotels with pricing info
+- `GET /hotels/:id` - Get hotel details
+- `GET /hotels/:id/prices` - Get room prices for a specific hotel
+
+### Booking Endpoints
+
+- `POST /bookings` - Create a new booking
+- `GET /bookings` - Get user's bookings
+- `GET /bookings/:id` - Get booking details
+- `POST /bookings/create-payment-session` - Create payment session
+
+### Authentication Endpoints
+
+- `POST /auth/register` - Register a new user
+- `POST /auth/login` - User login
+
+### Destination Endpoints
+
+- `GET /destinations/search?q=query` - Search destinations (autocomplete)
+- `GET /destinations/:uid` - Get destination details
+
+## 📁 Project Structure
+
+```
+hotel-backend/
+├── config/              # Configuration files
+│   ├── config.js        # Main configuration
+│   ├── database.js      # Database connection
+│   └── stripe.js        # Stripe integration
+├── controller/          # Route handlers
+│   ├── authController.js
+│   ├── bookingController.js
+│   ├── destinations.js
+│   └── hotel.js
+├── middleware/          # Express middleware
+│   ├── auth.js          # Authentication middleware
+│   └── cache.js         # Caching middleware
+├── model/               # Data models
+│   ├── booking.js
+│   ├── destinations.js
+│   ├── hotel.js
+│   └── user.js
+├── static/              # Static data (when not using API)
+│   ├── hotels.json
+│   ├── hotel_prices.json
+│   └── hotel_rooms.json
+├── tests/               # Test suites
+│   ├── integration/
+│   └── unit/
+├── .dockerignore
+├── .env.example
+├── Dockerfile
+├── errors.js            # Error handling
+├── index.js             # Application entry point
+└── package.json
+```
+
+## 🧪 Testing
+
+```bash
+# Run unit tests
+npm run test:unit
+
+# Run integration tests
+npm run test:integration
+
+# Run all tests with coverage
+npm test
+```
+
+## 📝 Development
+
+### Available Scripts
+
+```bash
+# Start in development mode
 npm run dev
 
-# Production mode
+# Start in production mode
 npm start
-```
-The server will run on `http://localhost:3000` by default.
 
-## Available Scripts
-
-```sh
-# Server Commands
-npm start              # Start server in production mode
-npm run dev           # Start server in development mode (with nodemon)
-
-# Database Commands
-npm run db:test       # Test database connection
-npm run db:init       # Initialize database tables
-npm run db:reset      # Reset database (drop and recreate tables)
-
-# Testing Commands
-npm run test:unit         # Run unit tests
-npm run test:integration  # Run integration tests
+# Database operations
+npm run db:test       # Test connection
+npm run db:init       # Initialize schema
+npm run db:reset      # Reset database
+npm run db:seed       # Seed with test data
 ```
 
-## Project Structure
+### Static Mode
 
-- `controller/` — Route handlers and controllers (e.g., `hotel.js`).
-- `model/` — Data access and business logic (e.g., `hotel.js`).
-- `middleware/` — Express middleware (e.g., `auth.js`).
-- `config/` — Configuration files (e.g., `config.js`, `database.js`).
-- `scripts/` — Database setup and management scripts.
-- `tests/` — Unit and integration tests.
-- `errors.js` — Custom error classes and error codes.
-- `index.js` — Main entry point for the Express app.
-- `DATABASE_SETUP.md` — Detailed database setup instructions.
-- `.env.example` — Template for environment variables.
+This API can run without external API dependencies using static JSON files:
+
+1. The model layer has been configured to fall back to static data in `/static/*.json`
+2. This allows for development and testing without external dependencies
+3. See model files for implementation details
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## 📜 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 👥 Authors
+
+- **ELIBERP** - *Initial work*
+
+## 🙏 Acknowledgments
+
+- [Express.js](https://expressjs.com/) - Web framework
+- [MySQL](https://www.mysql.com/) - Database
+- [JWT](https://jwt.io/) - Authentication
+- [Stripe](https://stripe.com/) - Payment processing
 
 ### Adding New Files
 - **Controllers**: Add new route logic in the `controller/` folder. Export a router from each controller file.
