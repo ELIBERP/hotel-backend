@@ -1,260 +1,236 @@
-# 🏨 Hotel Booking API
+# 🏨 StayEase - Hotel Booking Platform  
 
-![Node.js](https://img.shields.io/badge/Node.js-18.x-green)
-![Express](https://img.shields.io/badge/Express-5.x-blue)
-![MySQL](https://img.shields.io/badge/MySQL-8.x-orange)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+![Node.js](https://img.shields.io/badge/Node.js-18+-green)  
+![React](https://img.shields.io/badge/React-19.x-blue)  
+![Express](https://img.shields.io/badge/Express-5.x-lightgrey)  
+![MySQL](https://img.shields.io/badge/MySQL-8.x-orange)  
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-38B2AC)  
+![License](https://img.shields.io/badge/License-MIT-yellow)  
 
-A full-featured hotel booking backend API built with Node.js and Express. This service provides endpoints for hotel search, room booking, user authentication, and payment processing.
+A modern **hotel booking platform** featuring a **React + Vite + Tailwind** frontend and a **Node.js + Express + MySQL** backend.  
 
-## ✨ Features
+The system provides hotel search with autocomplete, booking management, authentication, and payment integration — all in a responsive, Docker-ready setup.  
 
-- **Hotel Search** - Search hotels by destination, dates, and guest count
-- **Room Booking** - Book rooms with detailed information
-- **User Authentication** - Secure JWT-based authentication
-- **Payment Processing** - Integration with Stripe payment gateway
-- **Destination Autocomplete** - Fast destination search with autocomplete
-- **Caching** - Response caching for improved performance
-- **Comprehensive Testing** - Unit and integration tests
-- **Docker Support** - Easy containerization
+---
 
-## 🚀 Getting Started
+## ✨ Features  
 
-### Prerequisites
+### Frontend  
+- 🔍 **Advanced Search** with autocomplete & fuzzy matching  
+- 📅 **Date & Guest Selection** with validation  
+- 🏨 **Hotel Listings** with filters & sorting  
+- 🛏️ **Detailed Views** with room & pricing info  
+- 💳 **Mock Payment Integration** (ready for live gateway)  
+- 📱 **Responsive Design** (mobile-first, Tailwind CSS)  
 
-- Node.js 18.x or higher
-- MySQL 8.x (for booking persistence)
-- npm or yarn
+### Backend  
+- 🏨 **Hotel & Destination APIs** (search, details, pricing)  
+- 📑 **Booking APIs** with Stripe payment sessions  
+- 🔐 **JWT Authentication** for users  
+- ⚡ **Caching & Static Data Mode** for development  
+- 🐳 **Dockerized** for deployment  
+- 🧪 **Unit & Integration Tests**  
 
-### Installation
+---
 
-1. **Clone the repository**
+## 🏗️ System Architecture  
+
+```text
+               ┌─────────────────────┐
+               │     Frontend        │
+               │  React + Vite +     │
+               │  Tailwind CSS       │
+               └─────────┬───────────┘
+                         │ REST API calls (Axios/Fetch)
+                         ▼
+               ┌─────────────────────┐
+               │     Backend         │
+               │ Node.js + Express   │
+               │ Authentication, API │
+               │ Booking, Payments   │
+               └─────────┬───────────┘
+                         │
+         ┌───────────────┼────────────────┐
+         ▼                               ▼
+┌─────────────────────┐        ┌─────────────────────┐
+│    MySQL Database   │        │   Stripe API        │
+│ Hotel, Users,       │        │ Secure Payments     │
+│ Bookings persistence│        │ Webhooks            │
+└─────────────────────┘        └─────────────────────┘
+```
+
+- **Frontend**: Handles UI, search, booking flow, and maps integration.  
+- **Backend**: Provides REST API, authentication, caching, and DB queries.  
+- **Database**: MySQL stores hotels, users, bookings.  
+- **Third-party services**: Stripe for payments, Google Maps API for maps.  
+
+---
+
+## 🚀 Getting Started  
+
+### Prerequisites  
+- **Node.js**: v18+ for backend, v20+ recommended for frontend  
+- **MySQL**: v8.x  
+- **npm**: v10+  
+
+### Installation  
+
+1. **Clone both repos**  
    ```bash
    git clone https://github.com/ELIBERP/hotel-backend.git
+   git clone https://github.com/ELIBERP/hotel-client.git
+   ```
+
+2. **Backend Setup**  
+   ```bash
    cd hotel-backend
-   ```
-
-2. **Install dependencies**
-   ```bash
    npm install
+   cp .env.example .env   # configure database, JWT, Stripe
+   npm run db:init        # initialize database
+   npm run dev            # start backend server
+   # runs at http://localhost:3000
    ```
 
-3. **Configure environment variables**
+3. **Frontend Setup**  
    ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
+   cd ../hotel-client
+   npm install
+   cp .env.example .env   # configure API base URL & Google Maps keys
+   npm run dev            # start frontend dev server
+   # runs at http://localhost:5173
    ```
 
-4. **Initialize the database**
-   ```bash
-   npm run db:init
-   ```
+---
 
-5. **Start the development server**
-   ```bash
-   npm run dev
-   ```
+## 🐳 Docker Deployment  
 
-The server will be running at `http://localhost:3000`.
+Both services include Docker support. Example:  
 
-## 🔧 Configuration
+```bash
+# Backend
+cd hotel-backend
+docker build -t hotel-backend .
+docker run -p 3000:3000 hotel-backend
 
-Create a `.env` file in the project root with the following variables:
-
+# Frontend
+cd ../hotel-client
+docker build -t hotel-client .
+docker run -p 8080:80 hotel-client
 ```
-# API Configuration
+
+---
+
+## 🧪 Testing  
+
+- **Backend**  
+  ```bash
+  npm run test:unit
+  npm run test:integration
+  npm test
+  ```
+
+- **Frontend**  
+  ```bash
+  npm test
+  npm run test:watch
+  npm run test:coverage
+  ```
+
+---
+
+## 📁 Project Structure  
+
+### Backend (`hotel-backend/`)  
+```
+├── config/        # env, DB, Stripe config
+├── controller/    # route handlers
+├── middleware/    # auth, caching
+├── model/         # data models (MySQL or static JSON)
+├── static/        # static hotel data
+├── tests/         # unit & integration tests
+└── index.js       # entry point
+```
+
+### Frontend (`hotel-client/`)  
+```
+├── assets/        # static files
+├── components/    # reusable UI
+├── pages/         # route views
+├── services/      # API communication
+├── config/        # env handling
+└── main.jsx       # entry point
+```
+
+---
+
+## 🔐 Environment Variables  
+
+### Backend `.env`  
+```env
 PORT=3000
 NODE_ENV=development
-
-# Frontend URLs
 FRONTEND_URL=http://localhost:5173
-PRODUCTION_URL=https://your-production-frontend-url.com
-
-# Hotel API (can be replaced with static data)
 HOTELAPI=https://hotelapi.loyalty.dev
-
-# Database Configuration
 REACT_DB_HOST=localhost
 REACT_DB_USERNAME=root
 REACT_DB_PW=your_password
 REACT_DB_NAME=hotel_booking
-
-# JWT Authentication
 REACT_JWT_KEY=your_jwt_secret_key_here
 REACT_JWT_EXPIRY=24h
-
-# Stripe Integration (Optional)
 STRIPE_SECRET_KEY=your_stripe_secret_key
 STRIPE_WEBHOOK_SECRET=your_webhook_secret
 ```
 
-## 🐳 Docker Support
-
-This project includes Docker support for easy containerization:
-
-```bash
-# Build the Docker image
-docker build -t hotel-booking-api .
-
-# Run the container
-docker run -p 3000:3000 -e HOTELAPI=https://hotelapi.loyalty.dev hotel-booking-api
+### Frontend `.env`  
+```env
+VITE_API_BASE_URL=http://localhost:3000/api
+VITE_API_TIMEOUT=10000
+VITE_APP_NAME=StayEase
+VITE_APP_VERSION=1.0.0
+VITE_GOOGLEMAP_API_KEY=your_google_maps_api_key
+VITE_GOOGLEMAP_MAP_ID=your_google_map_id
+VITE_DEBUG_MODE=true
 ```
-
-## 📚 API Documentation
-
-### Hotel Endpoints
-
-- `GET /hotels` - Search hotels by destination
-- `GET /hotels/prices` - Search hotels with pricing info
-- `GET /hotels/:id` - Get hotel details
-- `GET /hotels/:id/prices` - Get room prices for a specific hotel
-
-### Booking Endpoints
-
-- `POST /bookings` - Create a new booking
-- `GET /bookings` - Get user's bookings
-- `GET /bookings/:id` - Get booking details
-- `POST /bookings/create-payment-session` - Create payment session
-
-### Authentication Endpoints
-
-- `POST /auth/register` - Register a new user
-- `POST /auth/login` - User login
-
-### Destination Endpoints
-
-- `GET /destinations/search?q=query` - Search destinations (autocomplete)
-- `GET /destinations/:uid` - Get destination details
-
-## 📁 Project Structure
-
-```
-hotel-backend/
-├── config/              # Configuration files
-│   ├── config.js        # Main configuration
-│   ├── database.js      # Database connection
-│   └── stripe.js        # Stripe integration
-├── controller/          # Route handlers
-│   ├── authController.js
-│   ├── bookingController.js
-│   ├── destinations.js
-│   └── hotel.js
-├── middleware/          # Express middleware
-│   ├── auth.js          # Authentication middleware
-│   └── cache.js         # Caching middleware
-├── model/               # Data models
-│   ├── booking.js
-│   ├── destinations.js
-│   ├── hotel.js
-│   └── user.js
-├── static/              # Static data (when not using API)
-│   ├── hotels.json
-│   ├── hotel_prices.json
-│   └── hotel_rooms.json
-├── tests/               # Test suites
-│   ├── integration/
-│   └── unit/
-├── .dockerignore
-├── .env.example
-├── Dockerfile
-├── errors.js            # Error handling
-├── index.js             # Application entry point
-└── package.json
-```
-
-## 🧪 Testing
-
-```bash
-# Run unit tests
-npm run test:unit
-
-# Run integration tests
-npm run test:integration
-
-# Run all tests with coverage
-npm test
-```
-
-## 📝 Development
-
-### Available Scripts
-
-```bash
-# Start in development mode
-npm run dev
-
-# Start in production mode
-npm start
-
-# Database operations
-npm run db:test       # Test connection
-npm run db:init       # Initialize schema
-npm run db:reset      # Reset database
-npm run db:seed       # Seed with test data
-```
-
-### Static Mode
-
-This API can run without external API dependencies using static JSON files:
-
-1. The model layer has been configured to fall back to static data in `/static/*.json`
-2. This allows for development and testing without external dependencies
-3. See model files for implementation details
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-## 📜 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 👥 Authors
-
-- **ELIBERP** - *Initial work*
-
-## 🙏 Acknowledgments
-
-- [Express.js](https://expressjs.com/) - Web framework
-- [MySQL](https://www.mysql.com/) - Database
-- [JWT](https://jwt.io/) - Authentication
-- [Stripe](https://stripe.com/) - Payment processing
-
-### Adding New Files
-- **Controllers**: Add new route logic in the `controller/` folder. Export a router from each controller file.
-- **Models**: Add new data access or business logic in the `model/` folder. (Think, this is the direct connection to your database)
-- **Middleware**: Add reusable middleware in the `middleware/` folder.
-- **Routes**: If you want to organize routes separately, use the `routes/` folder and import them in `index.js`.
-- **Config**: Store configuration and environment-specific settings in `config/`.
-
-> **Tip:** Keep controllers focused on handling requests/responses, and models focused on data/business logic. This keeps the codebase modular and maintainable.
-
-## Adding new test cases
-- Use **/tests/unit** to test the business logic of the APIs. Mock the response of the API
-- Use **/tests/integration** to test the actual working of the APIs
-
-## Example Requests
-
-You can use tools like [Postman](https://www.postman.com/) or [curl](https://curl.se/) to test the backend.
-
-### 1. Test the Welcome Route
-```
-GET http://localhost:3000/
-```
-**Response:**
-```
-Welcome to the Hotel API!
-```
-
-## Notes
-- Ensure your `.env` file is not committed to version control.
-- Update `FRONTEND_URL` and `PRODUCTION_URL` as needed for your deployment.
-- For new features, follow the folder structure and keep code modular.
 
 ---
 
-For any questions, contact the project maintainer or check the code comments for guidance.
+## 🤝 Contributing  
+
+1. Fork the repo(s)  
+2. Create a feature branch: `git checkout -b feature/amazing-feature`  
+3. Commit changes: `git commit -m 'Add amazing feature'`  
+4. Push branch: `git push origin feature/amazing-feature`  
+5. Open a Pull Request  
+
+---
+
+## 📜 License  
+
+This project is licensed under the **MIT License**.  
+
+---
+
+## 👥 Team C3T6  
+
+- Elizabeth  
+- Darren  
+- Nicholas  
+- Sharon  
+- Qin Xin  
+- Jing Yu  
+- Dha  
+- Ky  
+
+---
+
+## 🙏 Acknowledgments  
+
+- [Express.js](https://expressjs.com/)  
+- [MySQL](https://www.mysql.com/)  
+- [JWT](https://jwt.io/)  
+- [Stripe](https://stripe.com/)  
+- [React](https://react.dev/)  
+- [Tailwind CSS](https://tailwindcss.com/)  
+- [Vite](https://vitejs.dev/)  
+
+---
